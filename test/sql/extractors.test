@@ -1,0 +1,88 @@
+# name: test/sql/extractors.test
+# description: Table functions (sections, imports, exports, strings) over fixtures
+# group: [vgi_pe]
+
+require-env VGI_PE_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION '${VGI_PE_WORKER}');
+
+# ---- sections: rows, ordered, entropy in range, PE flags --------------------
+
+query I
+SELECT count(*) > 0 FROM pe.sections('test/sql/data/hello.exe');
+----
+true
+
+# Every section's entropy is in [0, 8].
+query I
+SELECT bool_and(entropy BETWEEN 0 AND 8) FROM pe.sections('test/sql/data/hello.exe');
+----
+true
+
+# The .text section is code + executable (deterministic, ordered by name).
+query I
+SELECT characteristics LIKE '%CNT_CODE%' AND characteristics LIKE '%MEM_EXECUTE%'
+FROM pe.sections('test/sql/data/hello.exe')
+WHERE name = '.text';
+----
+true
+
+# ELF/Mach-O sections carry no PE characteristics flags.
+query I
+SELECT bool_and(characteristics = '') FROM pe.sections('test/sql/data/hello_elf');
+----
+true
+
+# ---- imports: PE imports grouped by DLL -------------------------------------
+
+query I
+SELECT count(*) > 0
+FROM pe.imports('test/sql/data/hello.exe')
+WHERE upper(library) LIKE 'KERNEL32%';
+----
+true
+
+# Every PE import row names a library and a function.
+query I
+SELECT bool_and(library <> '' AND function <> '')
+FROM pe.imports('test/sql/data/hello.exe');
+----
+true
+
+# ---- exports: Mach-O exports a _main symbol ---------------------------------
+
+query I
+SELECT count(*) > 0
+FROM pe.exports('test/sql/data/hello_macho')
+WHERE name = '_main';
+----
+true
+
+# ---- strings: known content + min_len filter --------------------------------
+
+query I
+SELECT count(*) > 0
+FROM pe.strings('test/sql/data/hello.exe')
+WHERE value LIKE '%hello from vgi-pe%';
+----
+true
+
+# seq is dense and 1-based.
+query I
+SELECT min(seq) = 1 AND max(seq) = count(*) FROM pe.strings('test/sql/data/hello.exe');
+----
+true
+
+# min_len filter: every reported string is at least 20 chars.
+query I
+SELECT bool_and(length(value) >= 20)
+FROM pe.strings('test/sql/data/hello.exe', min_len := 20);
+----
+true
+
+statement ok
+DETACH pe;

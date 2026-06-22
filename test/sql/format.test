@@ -1,0 +1,104 @@
+# name: test/sql/format.test
+# description: Format detection + core scalars over committed PE/ELF/Mach-O fixtures
+# group: [vgi_pe]
+
+require-env VGI_PE_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION '${VGI_PE_WORKER}');
+
+# ---- binary_format ----------------------------------------------------------
+
+query I
+SELECT pe.binary_format('test/sql/data/hello.exe');
+----
+PE
+
+query I
+SELECT pe.binary_format('test/sql/data/hello_elf');
+----
+ELF
+
+query I
+SELECT pe.binary_format('test/sql/data/hello_macho');
+----
+MachO
+
+# NULL input -> NULL output.
+query I
+SELECT pe.binary_format(NULL::VARCHAR) IS NULL;
+----
+true
+
+# ---- machine ----------------------------------------------------------------
+
+query I
+SELECT pe.machine('test/sql/data/hello.exe');
+----
+X86_64
+
+query I
+SELECT pe.machine('test/sql/data/hello_macho');
+----
+ARM64
+
+# ---- is_signed --------------------------------------------------------------
+
+query I
+SELECT pe.is_signed('test/sql/data/hello.exe');
+----
+false
+
+query I
+SELECT pe.is_signed('test/sql/data/hello_macho');
+----
+true
+
+# ---- entry_point: a positive virtual address --------------------------------
+
+query I
+SELECT pe.entry_point('test/sql/data/hello.exe') > 0;
+----
+true
+
+# ---- compile_timestamp: PE only, byte-deterministic in our fixture ----------
+
+query I
+SELECT pe.compile_timestamp('test/sql/data/hello.exe') = TIMESTAMP '2023-11-14 22:13:20';
+----
+true
+
+query I
+SELECT pe.compile_timestamp('test/sql/data/hello_elf') IS NULL;
+----
+true
+
+# ---- imphash: PE only -------------------------------------------------------
+
+query I
+SELECT length(pe.imphash('test/sql/data/hello.exe')) = 32;
+----
+true
+
+query I
+SELECT pe.imphash('test/sql/data/hello_elf') IS NULL;
+----
+true
+
+# ---- section_count / overall_entropy ----------------------------------------
+
+query I
+SELECT pe.section_count('test/sql/data/hello.exe') > 0;
+----
+true
+
+query I
+SELECT pe.overall_entropy('test/sql/data/hello.exe') BETWEEN 0 AND 8;
+----
+true
+
+statement ok
+DETACH pe;
