@@ -4,7 +4,9 @@
 
 <p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
 
-# vgi-pe
+# Static PE/ELF/Mach-O Analysis — Sections, Entropy & Imports in DuckDB
+
+> **vgi-pe** · a [Query.Farm](https://query.farm) VGI worker · powered by LIEF
 
 Static analysis of executable binaries — **PE, ELF, and Mach-O** — as DuckDB SQL
 functions, served by a [VGI](https://query.farm) worker. A defensive
