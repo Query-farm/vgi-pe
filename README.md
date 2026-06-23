@@ -112,7 +112,7 @@ and offline (no network), so the suite is fast and hermetic.
 
 ## Authorship & License
 
-Written by [Query.Farm](https://query.farm) — every VGI worker is designed and built by Query.Farm.
+Written by [Query.Farm](https://query.farm).
 
 Copyright 2026 Query Farm LLC - https://query.farm
 
