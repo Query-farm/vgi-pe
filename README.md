@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="docs/vgi-logo.png" alt="Vector Gateway Interface (VGI)" width="320">
+</p>
+
+<p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
+
 # vgi-pe
 
 Static analysis of executable binaries — **PE, ELF, and Mach-O** — as DuckDB SQL
@@ -101,3 +107,12 @@ uv run ruff check . && uv run mypy vgi_pe/
 which is **Apache-2.0** — a permissive license with no copyleft obligation, used
 as an ordinary, unmodified, separately-installed dependency. Everything is pure
 and offline (no network), so the suite is fast and hermetic.
+
+---
+
+## Authorship & License
+
+Written by [Query.Farm](https://query.farm) — every VGI worker is designed and built by Query.Farm.
+
+Copyright 2026 Query Farm LLC - https://query.farm
+
