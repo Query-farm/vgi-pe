@@ -1,13 +1,10 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python",
+#     "vgi-python>=0.8.3",
 #     "lief>=0.15",
 #     "pyarrow",
 # ]
-#
-# [tool.uv.sources]
-# vgi-python = { path = "../vgi-python" }
 # ///
 """VGI worker exposing static analysis of executable binaries to SQL.
 
