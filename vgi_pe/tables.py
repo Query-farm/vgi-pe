@@ -111,6 +111,8 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _SECTIONS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (VARCHAR path)"
         categories = ["pe", "structure"]
@@ -123,10 +125,12 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_SectionsPathArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=10, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_SectionsPathArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_path(params.args.binary)
         if src is None:
             out.finish()
@@ -142,6 +146,8 @@ class SectionsBytesFunction(TableFunctionGenerator[_SectionsBytesArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _SECTIONS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (BLOB bytes)"
         categories = ["pe", "structure"]
@@ -154,10 +160,12 @@ class SectionsBytesFunction(TableFunctionGenerator[_SectionsBytesArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_SectionsBytesArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=10, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_SectionsBytesArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_bytes(params.args.binary)
         if src is None:
             out.finish()
@@ -209,6 +217,8 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _IMPORTS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "imports"
         description = "Imported symbols (library, function) of a binary (VARCHAR path)"
         categories = ["pe", "imports"]
@@ -221,10 +231,12 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_ImportsPathArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=100, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_ImportsPathArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_path(params.args.binary)
         if src is None:
             out.finish()
@@ -240,6 +252,8 @@ class ImportsBytesFunction(TableFunctionGenerator[_ImportsBytesArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _IMPORTS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "imports"
         description = "Imported symbols (library, function) of a binary (BLOB bytes)"
         categories = ["pe", "imports"]
@@ -252,10 +266,12 @@ class ImportsBytesFunction(TableFunctionGenerator[_ImportsBytesArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_ImportsBytesArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=100, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_ImportsBytesArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_bytes(params.args.binary)
         if src is None:
             out.finish()
@@ -307,6 +323,8 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _EXPORTS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "exports"
         description = "Exported symbols (name, address) of a binary (VARCHAR path)"
         categories = ["pe", "exports"]
@@ -319,10 +337,12 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_ExportsPathArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=100, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_ExportsPathArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_path(params.args.binary)
         if src is None:
             out.finish()
@@ -338,6 +358,8 @@ class ExportsBytesFunction(TableFunctionGenerator[_ExportsBytesArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _EXPORTS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "exports"
         description = "Exported symbols (name, address) of a binary (BLOB bytes)"
         categories = ["pe", "exports"]
@@ -350,10 +372,12 @@ class ExportsBytesFunction(TableFunctionGenerator[_ExportsBytesArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_ExportsBytesArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=100, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_ExportsBytesArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_bytes(params.args.binary)
         if src is None:
             out.finish()
@@ -407,6 +431,8 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _STRINGS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (VARCHAR path)"
         categories = ["pe", "strings"]
@@ -423,10 +449,12 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_StringsPathArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=1000, max=core.MAX_STRINGS)
 
     @classmethod
     def process(cls, params: ProcessParams[_StringsPathArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_path(params.args.binary)
         if src is None:
             out.finish()
@@ -442,6 +470,8 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _STRINGS_SCHEMA
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (BLOB bytes)"
         categories = ["pe", "strings"]
@@ -454,10 +484,12 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_StringsBytesArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
         return TableCardinality(estimate=1000, max=core.MAX_STRINGS)
 
     @classmethod
     def process(cls, params: ProcessParams[_StringsBytesArgs], state: None, out: OutputCollector) -> None:
+        """Emit the result rows for one input binary."""
         src = BinarySource.from_bytes(params.args.binary)
         if src is None:
             out.finish()

@@ -95,6 +95,7 @@ class BinarySource:
     __slots__ = ("data", "path")
 
     def __init__(self, *, path: str | None = None, data: bytes | None = None) -> None:
+        """Build a source from exactly one of a filesystem path or raw bytes."""
         self.path = path
         self.data = data
 
@@ -218,8 +219,10 @@ def entry_point(src: BinarySource) -> int | None:
 
 
 def is_signed(src: BinarySource) -> bool | None:
-    """``True`` if the binary carries a code signature, else ``False``; ``None``
-    if it isn't a parseable binary.
+    """Report whether the binary carries a code signature, or ``None``.
+
+    Returns ``True`` / ``False`` for a parseable binary; ``None`` if it isn't a
+    parseable binary.
 
     Covers PE Authenticode signatures and Mach-O code-signature load commands.
     ELF has no standard embedded code signature, so a valid ELF reports
@@ -424,10 +427,7 @@ def imports(src: BinarySource) -> list[tuple[str, str]]:
                     if len(rows) >= MAX_ROWS:
                         return rows
                     try:
-                        if entry.is_ordinal:
-                            function = f"ordinal#{int(entry.ordinal)}"
-                        else:
-                            function = str(entry.name or "")
+                        function = f"ordinal#{int(entry.ordinal)}" if entry.is_ordinal else str(entry.name or "")
                     except Exception:
                         continue
                     rows.append((library, function))

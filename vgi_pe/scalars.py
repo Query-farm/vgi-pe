@@ -77,6 +77,8 @@ class BinaryFormatPathFunction(ScalarFunction):
     """``binary_format(path)`` -- 'PE'/'ELF'/'MachO' for a file at a path."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "binary_format"
         description = "Executable format ('PE'/'ELF'/'MachO') of a binary (VARCHAR path), or NULL"
         categories = ["pe", "format"]
@@ -91,6 +93,7 @@ class BinaryFormatPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.binary_format, pa.string())
 
 
@@ -98,6 +101,8 @@ class BinaryFormatBytesFunction(ScalarFunction):
     """``binary_format(blob)`` -- 'PE'/'ELF'/'MachO' for raw bytes."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "binary_format"
         description = "Executable format ('PE'/'ELF'/'MachO') of a binary (BLOB bytes), or NULL"
         categories = ["pe", "format"]
@@ -112,6 +117,7 @@ class BinaryFormatBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.binary_format, pa.string())
 
 
@@ -124,6 +130,8 @@ class IsSignedPathFunction(ScalarFunction):
     """``is_signed(path)`` -- True if the binary carries a code signature."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "is_signed"
         description = "True if a binary (VARCHAR path) carries a code signature (PE Authenticode / Mach-O)"
         categories = ["pe", "security"]
@@ -138,6 +146,7 @@ class IsSignedPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.BooleanArray, Returns(arrow_type=pa.bool_())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.is_signed, pa.bool_())
 
 
@@ -145,6 +154,8 @@ class IsSignedBytesFunction(ScalarFunction):
     """``is_signed(blob)`` -- True if binary bytes carry a code signature."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "is_signed"
         description = "True if a binary (BLOB bytes) carries a code signature (PE Authenticode / Mach-O)"
         categories = ["pe", "security"]
@@ -159,6 +170,7 @@ class IsSignedBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.BooleanArray, Returns(arrow_type=pa.bool_())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.is_signed, pa.bool_())
 
 
@@ -171,6 +183,8 @@ class EntryPointPathFunction(ScalarFunction):
     """``entry_point(path)`` -- entry-point virtual address of a file."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "entry_point"
         description = "Entry-point virtual address of a binary (VARCHAR path), or NULL"
         categories = ["pe", "structure"]
@@ -185,6 +199,7 @@ class EntryPointPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.UInt64Array, Returns(arrow_type=pa.uint64())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.entry_point, pa.uint64())
 
 
@@ -192,6 +207,8 @@ class EntryPointBytesFunction(ScalarFunction):
     """``entry_point(blob)`` -- entry-point virtual address of bytes."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "entry_point"
         description = "Entry-point virtual address of a binary (BLOB bytes), or NULL"
         categories = ["pe", "structure"]
@@ -206,6 +223,7 @@ class EntryPointBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.UInt64Array, Returns(arrow_type=pa.uint64())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.entry_point, pa.uint64())
 
 
@@ -218,6 +236,8 @@ class MachinePathFunction(ScalarFunction):
     """``machine(path)`` -- architecture name of a file."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "machine"
         description = "Architecture of a binary (VARCHAR path), e.g. 'X86_64'/'ARM64', or NULL"
         categories = ["pe", "structure"]
@@ -232,6 +252,7 @@ class MachinePathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.machine, pa.string())
 
 
@@ -239,6 +260,8 @@ class MachineBytesFunction(ScalarFunction):
     """``machine(blob)`` -- architecture name of bytes."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "machine"
         description = "Architecture of a binary (BLOB bytes), e.g. 'X86_64'/'ARM64', or NULL"
         categories = ["pe", "structure"]
@@ -253,6 +276,7 @@ class MachineBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.machine, pa.string())
 
 
@@ -280,6 +304,8 @@ class CompileTimestampPathFunction(ScalarFunction):
     """``compile_timestamp(path)`` -- PE TimeDateStamp of a file, or NULL."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "compile_timestamp"
         description = "PE build timestamp (TimeDateStamp) of a binary (VARCHAR path); NULL for ELF/Mach-O"
         categories = ["pe", "metadata"]
@@ -294,6 +320,7 @@ class CompileTimestampPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.Array, Returns(arrow_type=_TS_TYPE)]:
+        """Compute the per-row result array for the input batch."""
         return _timestamps(_sources_from_paths(binary))
 
 
@@ -301,6 +328,8 @@ class CompileTimestampBytesFunction(ScalarFunction):
     """``compile_timestamp(blob)`` -- PE TimeDateStamp of bytes, or NULL."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "compile_timestamp"
         description = "PE build timestamp (TimeDateStamp) of a binary (BLOB bytes); NULL for ELF/Mach-O"
         categories = ["pe", "metadata"]
@@ -315,6 +344,7 @@ class CompileTimestampBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.Array, Returns(arrow_type=_TS_TYPE)]:
+        """Compute the per-row result array for the input batch."""
         return _timestamps(_sources_from_bytes(binary))
 
 
@@ -327,6 +357,8 @@ class SectionCountPathFunction(ScalarFunction):
     """``section_count(path)`` -- number of sections in a file."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "section_count"
         description = "Number of sections in a binary (VARCHAR path), or NULL"
         categories = ["pe", "structure"]
@@ -341,6 +373,7 @@ class SectionCountPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.Int32Array, Returns(arrow_type=pa.int32())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.section_count, pa.int32())
 
 
@@ -348,6 +381,8 @@ class SectionCountBytesFunction(ScalarFunction):
     """``section_count(blob)`` -- number of sections in bytes."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "section_count"
         description = "Number of sections in a binary (BLOB bytes), or NULL"
         categories = ["pe", "structure"]
@@ -362,6 +397,7 @@ class SectionCountBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.Int32Array, Returns(arrow_type=pa.int32())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.section_count, pa.int32())
 
 
@@ -374,6 +410,8 @@ class OverallEntropyPathFunction(ScalarFunction):
     """``overall_entropy(path)`` -- Shannon entropy of a whole file."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "overall_entropy"
         description = "Shannon entropy (bits/byte, 0-8) of a binary (VARCHAR path); high => packed/encrypted"
         categories = ["pe", "entropy"]
@@ -388,6 +426,7 @@ class OverallEntropyPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.DoubleArray, Returns(arrow_type=pa.float64())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.overall_entropy, pa.float64())
 
 
@@ -395,6 +434,8 @@ class OverallEntropyBytesFunction(ScalarFunction):
     """``overall_entropy(blob)`` -- Shannon entropy of bytes."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "overall_entropy"
         description = "Shannon entropy (bits/byte, 0-8) of a binary (BLOB bytes); high => packed/encrypted"
         categories = ["pe", "entropy"]
@@ -409,6 +450,7 @@ class OverallEntropyBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.DoubleArray, Returns(arrow_type=pa.float64())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.overall_entropy, pa.float64())
 
 
@@ -421,6 +463,8 @@ class ImphashPathFunction(ScalarFunction):
     """``imphash(path)`` -- PE import hash of a file, or NULL."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "imphash"
         description = "PE import hash (for clustering) of a binary (VARCHAR path); NULL for ELF/Mach-O"
         categories = ["pe", "clustering"]
@@ -435,6 +479,7 @@ class ImphashPathFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_paths(binary), core.imphash, pa.string())
 
 
@@ -442,6 +487,8 @@ class ImphashBytesFunction(ScalarFunction):
     """``imphash(blob)`` -- PE import hash of bytes, or NULL."""
 
     class Meta:
+        """SDK function metadata (name, description, examples)."""
+
         name = "imphash"
         description = "PE import hash (for clustering) of a binary (BLOB bytes); NULL for ELF/Mach-O"
         categories = ["pe", "clustering"]
@@ -456,6 +503,7 @@ class ImphashBytesFunction(ScalarFunction):
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
+        """Compute the per-row result array for the input batch."""
         return _map(_sources_from_bytes(binary), core.imphash, pa.string())
 
 

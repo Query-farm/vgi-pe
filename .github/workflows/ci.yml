@@ -126,3 +126,6 @@ jobs:
 
       - name: Type check (mypy)
         run: uv run mypy vgi_pe/
+
+      - name: Docstring lint (pydoclint)
+        run: uv run pydoclint vgi_pe/
