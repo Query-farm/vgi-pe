@@ -45,6 +45,37 @@ from . import core
 from .core import BinarySource
 from .schema_utils import field
 
+# DuckDB cannot expose a table function's output schema for discovery, so each
+# table function carries a ``vgi.columns_md`` tag: a Markdown table of the rows
+# it returns. These mirror the ``pa.schema([...])`` definitions below.
+_SECTIONS_COLUMNS_MD = (
+    "| column | type | description |\n"
+    "|---|---|---|\n"
+    "| `name` | VARCHAR | Section name (e.g. `.text`, `.data`, `__TEXT`). |\n"
+    "| `virtual_size` | BIGINT | Size in bytes when mapped into memory. |\n"
+    "| `raw_size` | BIGINT | Size in bytes on disk. |\n"
+    "| `entropy` | DOUBLE | Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption. |\n"
+    "| `characteristics` | VARCHAR | Comma-joined section flags (PE only; empty for ELF/Mach-O). |"
+)
+_IMPORTS_COLUMNS_MD = (
+    "| column | type | description |\n"
+    "|---|---|---|\n"
+    "| `library` | VARCHAR | Imported library/DLL name (empty for ELF/Mach-O). |\n"
+    "| `function` | VARCHAR | Imported symbol name, or `ordinal#N` when imported by ordinal. |"
+)
+_EXPORTS_COLUMNS_MD = (
+    "| column | type | description |\n"
+    "|---|---|---|\n"
+    "| `name` | VARCHAR | Exported symbol name. |\n"
+    "| `address` | UBIGINT | Symbol address/value (0 when unavailable). |"
+)
+_STRINGS_COLUMNS_MD = (
+    "| column | type | description |\n"
+    "|---|---|---|\n"
+    "| `seq` | BIGINT | 1-based ordinal of the string in file order. |\n"
+    "| `value` | VARCHAR | Printable ASCII/UTF-16 string (length >= `min_len`). |"
+)
+
 # Optional minimum string length for ``strings``. Explicit ``arrow_type`` so a
 # supplied INTEGER binds correctly (without it the default makes the SDK infer a
 # NULL Arrow type).
@@ -116,6 +147,7 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (VARCHAR path)"
         categories = ["pe", "structure"]
+        tags = {"vgi.columns_md": _SECTIONS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.sections('sample.exe') ORDER BY name",
@@ -151,6 +183,7 @@ class SectionsBytesFunction(TableFunctionGenerator[_SectionsBytesArgs]):
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (BLOB bytes)"
         categories = ["pe", "structure"]
+        tags = {"vgi.columns_md": _SECTIONS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.sections(blob) ORDER BY name",
@@ -222,6 +255,7 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
         name = "imports"
         description = "Imported symbols (library, function) of a binary (VARCHAR path)"
         categories = ["pe", "imports"]
+        tags = {"vgi.columns_md": _IMPORTS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.imports('sample.exe') ORDER BY library, function",
@@ -257,6 +291,7 @@ class ImportsBytesFunction(TableFunctionGenerator[_ImportsBytesArgs]):
         name = "imports"
         description = "Imported symbols (library, function) of a binary (BLOB bytes)"
         categories = ["pe", "imports"]
+        tags = {"vgi.columns_md": _IMPORTS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.imports(blob) ORDER BY library, function",
@@ -328,6 +363,7 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
         name = "exports"
         description = "Exported symbols (name, address) of a binary (VARCHAR path)"
         categories = ["pe", "exports"]
+        tags = {"vgi.columns_md": _EXPORTS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.exports('sample.so') ORDER BY name",
@@ -363,6 +399,7 @@ class ExportsBytesFunction(TableFunctionGenerator[_ExportsBytesArgs]):
         name = "exports"
         description = "Exported symbols (name, address) of a binary (BLOB bytes)"
         categories = ["pe", "exports"]
+        tags = {"vgi.columns_md": _EXPORTS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.exports(blob) ORDER BY name",
@@ -436,6 +473,7 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (VARCHAR path)"
         categories = ["pe", "strings"]
+        tags = {"vgi.columns_md": _STRINGS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.strings('sample.exe') ORDER BY seq",
@@ -475,6 +513,7 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (BLOB bytes)"
         categories = ["pe", "strings"]
+        tags = {"vgi.columns_md": _STRINGS_COLUMNS_MD}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM pe.strings(blob) ORDER BY seq",

@@ -32,7 +32,7 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "vgi-python[http]>=0.8.3",
+    "vgi-python[http]>=0.8.4",
     "lief>=0.15",
     "pyarrow",
 ]
@@ -44,7 +44,7 @@ dependencies = [
 # dependency already pins `vgi-python[http]`, so a plain sync also pulls it; this
 # explicit extra keeps the `--extra http` install knob the CI job uses.)
 http = [
-    "vgi-python[http]>=0.8.3",
+    "vgi-python[http]>=0.8.4",
 ]
 dev = [
     "pytest>=8",
@@ -52,6 +52,22 @@ dev = [
     "mypy",
     "pydoclint",
 ]
+
+# vgi-lint catalog-metadata linter config. Auto-discovered (cwd upward) by both
+# the local `vgi-lint` run and the CI `Query-farm/vgi-lint-check@v1` action.
+[tool.vgi-lint-check]
+# `strings` is the one table function that pairs a positional binary argument
+# with a named one (`min_len :=`), AND it is registered twice (the VARCHAR-path
+# and BLOB-bytes overloads share the `strings` name — the worker's deliberate
+# path/bytes overload idiom, see CLAUDE.md). DuckDB cannot surface a positional
+# argument's name for an *overloaded* table function that also has named args, so
+# `duckdb_functions()` reports the binary arg as the placeholder `col0` and
+# VGI305 fires. The argument IS named (`binary`) in the worker metadata; this is
+# purely a DuckDB reporting limitation for overloaded table functions, so VGI305
+# is suppressed for this object only. (Single-signature table functions surface
+# the name fine — e.g. the sibling `vgi-calendar` `rrule`.)
+[tool.vgi-lint-check.per_object."pe.main.strings"]
+ignore = ["VGI305"]
 
 [build-system]
 requires = ["hatchling"]
