@@ -37,8 +37,18 @@ from vgi.arguments import Param, Returns
 from vgi.metadata import FunctionExample
 from vgi.scalar_function import ScalarFunction
 
-from . import core
+from . import core, meta
 from .core import BinarySource
+
+# A real, committed PE fixture the worker can open by relative path (the worker's
+# cwd is the repo root). Used so per-function examples actually EXECUTE and
+# return data under the strict linter (it runs every example by default).
+_PE_FIXTURE = "test/sql/data/hello.exe"
+_ELF_FIXTURE = "test/sql/data/hello_elf"
+
+# Build a BLOB of the same fixture inline so the BLOB-overload examples are
+# self-contained and runnable (DuckDB's `read_blob` returns the file bytes).
+_PE_BLOB = f"(SELECT content FROM read_blob('{_PE_FIXTURE}'))"
 
 # ---------------------------------------------------------------------------
 # Mapping helpers: apply a pure ``BinarySource -> X`` function across an input
@@ -72,6 +82,34 @@ def _map(
 # binary_format(binary) -> VARCHAR
 # ===========================================================================
 
+_BINARY_FORMAT_TAGS = meta.object_tags(
+    title="Detect Executable Format",
+    doc_llm=(
+        "Detect the **container format** of an executable image and return it as a short string: "
+        "`PE` (Windows portable executable), `ELF` (Linux/Unix), or `MachO` (macOS). Pass the "
+        "binary as either a VARCHAR filesystem path the worker opens or a BLOB of raw bytes. "
+        "Returns `NULL` when the input is NULL, empty, truncated, or not a recognizable "
+        "executable, so it is safe to run across a mixed corpus.\n\n"
+        "Use this first when triaging an unknown sample: the format decides which downstream "
+        "signals are meaningful (e.g. `imphash` and `compile_timestamp` are PE-only). The binary "
+        "is parsed statically and **never executed**."
+    ),
+    doc_md=(
+        "## binary_format\n\n"
+        "Returns the executable container format of a binary as `PE`, `ELF`, or `MachO`.\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.binary_format('malware.bin');   -- 'PE'\n"
+        "SELECT pe.binary_format(content) FROM read_blob('s.elf');\n"
+        "```\n\n"
+        "Accepts a VARCHAR path or a BLOB. Returns `NULL` for NULL, empty, or unrecognizable "
+        "input — never an error. Typically the first step in a triage pipeline because the format "
+        "gates which other functions apply."
+    ),
+    keywords="format, file type, magic, PE, ELF, Mach-O, MachO, executable, container, detect, identify, binary type",
+    relative_path="vgi_pe/scalars.py",
+)
+
 
 class BinaryFormatPathFunction(ScalarFunction):
     """``binary_format(path)`` -- 'PE'/'ELF'/'MachO' for a file at a path."""
@@ -82,9 +120,10 @@ class BinaryFormatPathFunction(ScalarFunction):
         name = "binary_format"
         description = "Executable format ('PE'/'ELF'/'MachO') of a binary (VARCHAR path), or NULL"
         categories = ["pe", "format"]
+        tags = _BINARY_FORMAT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.binary_format('sample.exe')",
+                sql=f"SELECT pe.binary_format('{_PE_FIXTURE}')",
                 description="Detect the executable format of a file",
             ),
         ]
@@ -106,9 +145,10 @@ class BinaryFormatBytesFunction(ScalarFunction):
         name = "binary_format"
         description = "Executable format ('PE'/'ELF'/'MachO') of a binary (BLOB bytes), or NULL"
         categories = ["pe", "format"]
+        tags = _BINARY_FORMAT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.binary_format(blob) FROM uploads",
+                sql=f"SELECT pe.binary_format({_PE_BLOB})",
                 description="Detect the executable format of bytes",
             ),
         ]
@@ -125,6 +165,35 @@ class BinaryFormatBytesFunction(ScalarFunction):
 # is_signed(binary) -> BOOLEAN
 # ===========================================================================
 
+_IS_SIGNED_TAGS = meta.object_tags(
+    title="Binary Is Code-Signed",
+    doc_llm=(
+        "Return whether a binary carries an embedded **code signature**: `true`/`false`, or "
+        "`NULL` for unparseable input. The check is format-aware — PE Authenticode signatures, "
+        "Mach-O embedded code signatures — and ELF, which has no native embedded-signature "
+        "concept, always reports `false`. A `false` result is a *successful* answer (the file "
+        "simply isn't signed), not a parse failure.\n\n"
+        "Use it as a quick trust signal during triage: unsigned system-looking binaries, or "
+        "binaries that masquerade as signed vendors but report `false`, are worth a closer look. "
+        "Note: this reports the *presence* of a signature, not whether the signature is valid or "
+        "trusted. Static read-only check; the binary is never executed."
+    ),
+    doc_md=(
+        "## is_signed\n\n"
+        "Boolean: does the binary carry an embedded code signature?\n\n"
+        "### Behavior by format\n\n"
+        "| format | meaning |\n"
+        "|---|---|\n"
+        "| PE | has an Authenticode signature |\n"
+        "| Mach-O | has an embedded code signature |\n"
+        "| ELF | always `false` (no native embedded signature) |\n\n"
+        "Returns `NULL` only for input that cannot be parsed. This reports *presence*, not "
+        "cryptographic *validity* — verify the chain separately if trust matters."
+    ),
+    keywords="signed, signature, code signing, authenticode, codesign, trust, certificate, PE, Mach-O, security",
+    relative_path="vgi_pe/scalars.py",
+)
+
 
 class IsSignedPathFunction(ScalarFunction):
     """``is_signed(path)`` -- True if the binary carries a code signature."""
@@ -135,9 +204,10 @@ class IsSignedPathFunction(ScalarFunction):
         name = "is_signed"
         description = "True if a binary (VARCHAR path) carries a code signature (PE Authenticode / Mach-O)"
         categories = ["pe", "security"]
+        tags = _IS_SIGNED_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.is_signed('sample.exe')",
+                sql=f"SELECT pe.is_signed('{_PE_FIXTURE}')",
                 description="Whether a binary file is code-signed",
             ),
         ]
@@ -159,9 +229,10 @@ class IsSignedBytesFunction(ScalarFunction):
         name = "is_signed"
         description = "True if a binary (BLOB bytes) carries a code signature (PE Authenticode / Mach-O)"
         categories = ["pe", "security"]
+        tags = _IS_SIGNED_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.is_signed(blob) FROM uploads",
+                sql=f"SELECT pe.is_signed({_PE_BLOB})",
                 description="Whether binary bytes are code-signed",
             ),
         ]
@@ -178,6 +249,32 @@ class IsSignedBytesFunction(ScalarFunction):
 # entry_point(binary) -> UBIGINT
 # ===========================================================================
 
+_ENTRY_POINT_TAGS = meta.object_tags(
+    title="Entry-Point Address",
+    doc_llm=(
+        "Return the **entry-point address** of an executable as an unsigned 64-bit integer — the "
+        "virtual address at which execution would begin (the PE `AddressOfEntryPoint` rebased to "
+        "the image base, the ELF/Mach-O entry address). Returns `NULL` for unparseable input. "
+        "The worker only reports the address; it never transfers control there.\n\n"
+        "Use it to fingerprint a build, to spot an entry point that lands outside the expected "
+        "code section (a classic packer/injection tell when correlated with `sections` and "
+        "`overall_entropy`), or as a join key when clustering related samples."
+    ),
+    doc_md=(
+        "## entry_point\n\n"
+        "The virtual address where execution begins, as a `UBIGINT`.\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.entry_point('sample.exe');   -- e.g. 5392\n"
+        "```\n\n"
+        "Returns `NULL` when the binary cannot be parsed. Compare against the address ranges from "
+        "`pe.sections(...)` to check that the entry point falls inside an executable section — an "
+        "entry point in a high-entropy or writable section is a common packing/injection signal."
+    ),
+    keywords="entry point, entrypoint, AddressOfEntryPoint, start address, OEP, virtual address, structure",
+    relative_path="vgi_pe/scalars.py",
+)
+
 
 class EntryPointPathFunction(ScalarFunction):
     """``entry_point(path)`` -- entry-point virtual address of a file."""
@@ -188,9 +285,10 @@ class EntryPointPathFunction(ScalarFunction):
         name = "entry_point"
         description = "Entry-point virtual address of a binary (VARCHAR path), or NULL"
         categories = ["pe", "structure"]
+        tags = _ENTRY_POINT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.entry_point('sample.exe')",
+                sql=f"SELECT pe.entry_point('{_PE_FIXTURE}')",
                 description="Entry-point address of a binary file",
             ),
         ]
@@ -212,9 +310,10 @@ class EntryPointBytesFunction(ScalarFunction):
         name = "entry_point"
         description = "Entry-point virtual address of a binary (BLOB bytes), or NULL"
         categories = ["pe", "structure"]
+        tags = _ENTRY_POINT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.entry_point(blob) FROM uploads",
+                sql=f"SELECT pe.entry_point({_PE_BLOB})",
                 description="Entry-point address of binary bytes",
             ),
         ]
@@ -231,6 +330,32 @@ class EntryPointBytesFunction(ScalarFunction):
 # machine(binary) -> VARCHAR
 # ===========================================================================
 
+_MACHINE_TAGS = meta.object_tags(
+    title="Target Architecture",
+    doc_llm=(
+        "Return the **target CPU architecture** of a binary as a normalized string, e.g. "
+        "`X86_64`, `I386`, `ARM64`, `ARM`. It reads LIEF's *abstract* architecture so the answer "
+        "is comparable across PE, ELF, and Mach-O rather than each format's raw machine code. "
+        "Returns `NULL` for unparseable input.\n\n"
+        "Use it to filter or partition a corpus by architecture (e.g. find all ARM64 samples), to "
+        "sanity-check that a sample matches the platform it claims, or to route a sample to the "
+        "right disassembler. Static read-only; the binary is never executed."
+    ),
+    doc_md=(
+        "## machine\n\n"
+        "The target CPU architecture as a normalized string (`X86_64`, `I386`, `ARM64`, `ARM`, "
+        "…).\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.machine('sample.exe');   -- 'X86_64'\n"
+        "```\n\n"
+        "Uses LIEF's abstract architecture so PE / ELF / Mach-O report on a common scale. Returns "
+        "`NULL` for input that cannot be parsed."
+    ),
+    keywords="machine, architecture, arch, cpu, x86, x86_64, amd64, i386, arm, arm64, aarch64, ISA, structure",
+    relative_path="vgi_pe/scalars.py",
+)
+
 
 class MachinePathFunction(ScalarFunction):
     """``machine(path)`` -- architecture name of a file."""
@@ -241,9 +366,10 @@ class MachinePathFunction(ScalarFunction):
         name = "machine"
         description = "Architecture of a binary (VARCHAR path), e.g. 'X86_64'/'ARM64', or NULL"
         categories = ["pe", "structure"]
+        tags = _MACHINE_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.machine('sample.exe')",
+                sql=f"SELECT pe.machine('{_PE_FIXTURE}')",
                 description="Architecture of a binary file",
             ),
         ]
@@ -265,9 +391,10 @@ class MachineBytesFunction(ScalarFunction):
         name = "machine"
         description = "Architecture of a binary (BLOB bytes), e.g. 'X86_64'/'ARM64', or NULL"
         categories = ["pe", "structure"]
+        tags = _MACHINE_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.machine(blob) FROM uploads",
+                sql=f"SELECT pe.machine({_PE_BLOB})",
                 description="Architecture of binary bytes",
             ),
         ]
@@ -300,6 +427,34 @@ def _timestamps(srcs: list[BinarySource | None]) -> pa.Array:
     return pa.array(out, type=_TS_TYPE)
 
 
+_COMPILE_TIMESTAMP_TAGS = meta.object_tags(
+    title="PE Build Timestamp",
+    doc_llm=(
+        "Return the PE **build timestamp** (the COFF header `TimeDateStamp`) as a `TIMESTAMP`. "
+        "This is **PE-only**: ELF and Mach-O have no equivalent header field and return `NULL`, "
+        "as does any unparseable input. The raw field is a Unix epoch in seconds; the worker "
+        "scales it to microsecond-precision Arrow timestamp.\n\n"
+        "Use it for build-provenance and timeline analysis — bucketing samples by build date, "
+        "spotting implausible values (the field is attacker-controllable, so a zero, far-future, "
+        "or suspiciously round timestamp is itself a signal), and correlating related builds. "
+        "Treat the value as a *claim*, not ground truth."
+    ),
+    doc_md=(
+        "## compile_timestamp\n\n"
+        "The PE COFF `TimeDateStamp` as a `TIMESTAMP` (PE only).\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.compile_timestamp('sample.exe');\n"
+        "```\n\n"
+        "Returns `NULL` for ELF, Mach-O, and unparseable input. The field is stored as a Unix "
+        "epoch (seconds) and is **attacker-controllable** — implausible values (zero, far future, "
+        "round numbers) are a triage signal, not an error."
+    ),
+    keywords="compile timestamp, build time, TimeDateStamp, PE header, provenance, timeline, metadata, epoch",
+    relative_path="vgi_pe/scalars.py",
+)
+
+
 class CompileTimestampPathFunction(ScalarFunction):
     """``compile_timestamp(path)`` -- PE TimeDateStamp of a file, or NULL."""
 
@@ -309,9 +464,10 @@ class CompileTimestampPathFunction(ScalarFunction):
         name = "compile_timestamp"
         description = "PE build timestamp (TimeDateStamp) of a binary (VARCHAR path); NULL for ELF/Mach-O"
         categories = ["pe", "metadata"]
+        tags = _COMPILE_TIMESTAMP_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.compile_timestamp('sample.exe')",
+                sql=f"SELECT pe.compile_timestamp('{_PE_FIXTURE}')",
                 description="PE compile timestamp of a binary file",
             ),
         ]
@@ -333,9 +489,10 @@ class CompileTimestampBytesFunction(ScalarFunction):
         name = "compile_timestamp"
         description = "PE build timestamp (TimeDateStamp) of a binary (BLOB bytes); NULL for ELF/Mach-O"
         categories = ["pe", "metadata"]
+        tags = _COMPILE_TIMESTAMP_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.compile_timestamp(blob) FROM uploads",
+                sql=f"SELECT pe.compile_timestamp({_PE_BLOB})",
                 description="PE compile timestamp of binary bytes",
             ),
         ]
@@ -353,6 +510,32 @@ class CompileTimestampBytesFunction(ScalarFunction):
 # ===========================================================================
 
 
+_SECTION_COUNT_TAGS = meta.object_tags(
+    title="Number of Sections",
+    doc_llm=(
+        "Return the **number of sections** in a binary as an integer (PE sections, ELF sections, "
+        "Mach-O sections across segments). Returns `NULL` for unparseable input.\n\n"
+        "A scalar summary of what `pe.sections(...)` enumerates row-by-row. Use it as a cheap "
+        "anomaly signal: an unusually low count (e.g. a single giant section) or an unusually high "
+        "one can indicate packing, a manually crafted file, or an unusual toolchain. Pair it with "
+        "`overall_entropy` for a quick packed-vs-clean heuristic. Static read-only; the binary is "
+        "never executed."
+    ),
+    doc_md=(
+        "## section_count\n\n"
+        "The number of sections in the binary, as an integer.\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.section_count('sample.exe');\n"
+        "```\n\n"
+        "Returns `NULL` for input that cannot be parsed. This is the scalar summary of "
+        "`pe.sections(...)`; very low or very high counts are mild packing/obfuscation signals."
+    ),
+    keywords="section count, sections, number of sections, segments, layout, structure, count",
+    relative_path="vgi_pe/scalars.py",
+)
+
+
 class SectionCountPathFunction(ScalarFunction):
     """``section_count(path)`` -- number of sections in a file."""
 
@@ -362,9 +545,10 @@ class SectionCountPathFunction(ScalarFunction):
         name = "section_count"
         description = "Number of sections in a binary (VARCHAR path), or NULL"
         categories = ["pe", "structure"]
+        tags = _SECTION_COUNT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.section_count('sample.exe')",
+                sql=f"SELECT pe.section_count('{_PE_FIXTURE}')",
                 description="Section count of a binary file",
             ),
         ]
@@ -386,9 +570,10 @@ class SectionCountBytesFunction(ScalarFunction):
         name = "section_count"
         description = "Number of sections in a binary (BLOB bytes), or NULL"
         categories = ["pe", "structure"]
+        tags = _SECTION_COUNT_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.section_count(blob) FROM uploads",
+                sql=f"SELECT pe.section_count({_PE_BLOB})",
                 description="Section count of binary bytes",
             ),
         ]
@@ -406,6 +591,35 @@ class SectionCountBytesFunction(ScalarFunction):
 # ===========================================================================
 
 
+_OVERALL_ENTROPY_TAGS = meta.object_tags(
+    title="Whole-File Shannon Entropy",
+    doc_llm=(
+        "Return the **Shannon entropy** of the entire file as a `DOUBLE` in bits-per-byte on a "
+        "`0.0`–`8.0` scale. It is computed over the raw file bytes (independent of the section "
+        "layout), so it works even when LIEF can't fully resolve the structure — but it still "
+        "returns `NULL` for NULL or non-binary input so a random text blob isn't given a "
+        "misleading number.\n\n"
+        "High whole-file entropy (typically `> ~7.0`) is the single strongest cheap signal of "
+        "**packing, compression, or encryption**: most native code sits around `5.5`–`6.5`, while "
+        "packed/encrypted payloads push toward `8.0`. Use it as a first-pass triage filter, then "
+        "drill into per-section entropy via `pe.sections(...)`. Static read-only."
+    ),
+    doc_md=(
+        "## overall_entropy\n\n"
+        "Whole-file Shannon entropy as a `DOUBLE`, in bits/byte on a `0`–`8` scale.\n\n"
+        "### Interpreting the value\n\n"
+        "| range | typical meaning |\n"
+        "|---|---|\n"
+        "| ~5.5–6.5 | ordinary native code/data |\n"
+        "| > ~7.0 | likely packed, compressed, or encrypted |\n\n"
+        "Computed over raw bytes (independent of section layout). Returns `NULL` for non-binary "
+        "input. For where the high entropy lives, see per-section entropy in `pe.sections(...)`."
+    ),
+    keywords="entropy, shannon, packing, packed, compressed, encrypted, obfuscation, randomness, triage",
+    relative_path="vgi_pe/scalars.py",
+)
+
+
 class OverallEntropyPathFunction(ScalarFunction):
     """``overall_entropy(path)`` -- Shannon entropy of a whole file."""
 
@@ -415,9 +629,10 @@ class OverallEntropyPathFunction(ScalarFunction):
         name = "overall_entropy"
         description = "Shannon entropy (bits/byte, 0-8) of a binary (VARCHAR path); high => packed/encrypted"
         categories = ["pe", "entropy"]
+        tags = _OVERALL_ENTROPY_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.overall_entropy('sample.exe')",
+                sql=f"SELECT pe.overall_entropy('{_PE_FIXTURE}')",
                 description="Overall entropy of a binary file",
             ),
         ]
@@ -439,9 +654,10 @@ class OverallEntropyBytesFunction(ScalarFunction):
         name = "overall_entropy"
         description = "Shannon entropy (bits/byte, 0-8) of a binary (BLOB bytes); high => packed/encrypted"
         categories = ["pe", "entropy"]
+        tags = _OVERALL_ENTROPY_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.overall_entropy(blob) FROM uploads",
+                sql=f"SELECT pe.overall_entropy({_PE_BLOB})",
                 description="Overall entropy of binary bytes",
             ),
         ]
@@ -459,6 +675,35 @@ class OverallEntropyBytesFunction(ScalarFunction):
 # ===========================================================================
 
 
+_IMPHASH_TAGS = meta.object_tags(
+    title="PE Import Hash (imphash)",
+    doc_llm=(
+        "Return the **imphash** (import hash) of a PE: the MD5 over the normalized, ordered list "
+        "of imported library/function names. It is **PE-only** — ELF and Mach-O, and any "
+        "unparseable input, return `NULL`. Two PEs built from the same source/toolchain with the "
+        "same import table share an imphash even if their bytes differ, which makes it a classic "
+        "**clustering / family-attribution** key for malware triage.\n\n"
+        "Use it to `GROUP BY` related samples, to pivot from one known-bad sample to others, or to "
+        "match against threat-intel imphash blocklists. Caveat: packers and import obfuscation can "
+        "collapse or mangle the import table, so an imphash is a strong-but-not-definitive link. "
+        "Static read-only; the binary is never executed."
+    ),
+    doc_md=(
+        "## imphash\n\n"
+        "The PE import hash — MD5 of the normalized import table — as a hex string (PE only).\n\n"
+        "### Usage\n\n"
+        "```sql\n"
+        "SELECT pe.imphash(path) AS h, count(*) FROM samples GROUP BY h ORDER BY 2 DESC;\n"
+        "```\n\n"
+        "Returns `NULL` for ELF, Mach-O, and unparseable input. Samples sharing an imphash are "
+        "likely the same family/build; packing or import obfuscation weakens the signal, so treat "
+        "it as a strong hint rather than proof."
+    ),
+    keywords="imphash, import hash, pehash, clustering, family, attribution, malware, fingerprint, MD5, imports",
+    relative_path="vgi_pe/scalars.py",
+)
+
+
 class ImphashPathFunction(ScalarFunction):
     """``imphash(path)`` -- PE import hash of a file, or NULL."""
 
@@ -468,9 +713,10 @@ class ImphashPathFunction(ScalarFunction):
         name = "imphash"
         description = "PE import hash (for clustering) of a binary (VARCHAR path); NULL for ELF/Mach-O"
         categories = ["pe", "clustering"]
+        tags = _IMPHASH_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.imphash('sample.exe')",
+                sql=f"SELECT pe.imphash('{_PE_FIXTURE}')",
                 description="Import hash of a PE file",
             ),
         ]
@@ -492,9 +738,10 @@ class ImphashBytesFunction(ScalarFunction):
         name = "imphash"
         description = "PE import hash (for clustering) of a binary (BLOB bytes); NULL for ELF/Mach-O"
         categories = ["pe", "clustering"]
+        tags = _IMPHASH_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT pe.imphash(blob) FROM uploads",
+                sql=f"SELECT pe.imphash({_PE_BLOB})",
                 description="Import hash of PE bytes",
             ),
         ]

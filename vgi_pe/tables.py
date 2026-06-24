@@ -25,6 +25,7 @@ expected case for a triage tool. A NULL ``binary`` argument also yields no rows.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Annotated, ClassVar
 
@@ -41,13 +42,21 @@ from vgi.table_function import (
 )
 from vgi_rpc.rpc import OutputCollector
 
-from . import core
+from . import core, meta
 from .core import BinarySource
 from .schema_utils import field
 
+# Real, committed fixtures the worker can open by relative path (the worker's cwd
+# is the repo root). Chosen per function so every example actually returns rows
+# under the strict linter (it runs every example by default). hello.exe has
+# sections/imports/strings; only the Mach-O fixture has exports.
+_PE_FIXTURE = "test/sql/data/hello.exe"
+_MACHO_FIXTURE = "test/sql/data/hello_macho"
+
+
 # DuckDB cannot expose a table function's output schema for discovery, so each
-# table function carries a ``vgi.columns_md`` tag: a Markdown table of the rows
-# it returns. These mirror the ``pa.schema([...])`` definitions below.
+# table function carries a ``vgi.result_columns_md`` tag: a Markdown table of the
+# rows it returns. These mirror the ``pa.schema([...])`` definitions below.
 _SECTIONS_COLUMNS_MD = (
     "| column | type | description |\n"
     "|---|---|---|\n"
@@ -85,6 +94,164 @@ _MIN_LEN = Arg[int | None](
     arrow_type=pa.int32(),
     doc="Minimum string length to report (default 5).",
 )
+
+
+# ---------------------------------------------------------------------------
+# Per-object discovery/description tags (VGI112/113/124/126/128) plus the
+# Markdown column docs (vgi.result_columns_md) and, for `sections`, a set of
+# guaranteed-runnable executable examples (VGI509).
+# ---------------------------------------------------------------------------
+
+# Catalog-qualified, self-contained, guaranteed-runnable examples (VGI509). Each
+# `sql` reads a committed fixture by relative path (the worker's cwd is the repo
+# root) so it executes cleanly against an attached `pe` worker. `expected_result`
+# is intentionally omitted — the linter only needs each query to run and return
+# rows, and pinning exact bytes/offsets would be brittle across build hosts.
+_SECTIONS_EXECUTABLE_EXAMPLES = json.dumps(
+    [
+        {
+            "description": "List the sections of a PE with their per-section entropy.",
+            "sql": f"SELECT name, entropy FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5",
+        },
+        {
+            "description": "Flag high-entropy sections (a packing/encryption signal).",
+            "sql": f"SELECT name, entropy FROM pe.main.sections('{_PE_FIXTURE}') WHERE entropy > 6",
+        },
+        {
+            "description": "Count the imported symbols of a PE.",
+            "sql": f"SELECT count(*) AS imports FROM pe.main.imports('{_PE_FIXTURE}')",
+        },
+        {
+            "description": "List exported symbols of a Mach-O binary.",
+            "sql": f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
+        },
+        {
+            "description": "Extract long printable strings from a binary.",
+            "sql": f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8) ORDER BY seq LIMIT 5",
+        },
+    ]
+)
+
+_SECTIONS_TAGS = {
+    **meta.object_tags(
+        title="Per-Section Layout & Entropy",
+        doc_llm=(
+            "Enumerate the **sections** of a binary, one row per section, with size and "
+            "**per-section Shannon entropy** — the workhorse table for layout-level triage. "
+            "Columns: `name`, `virtual_size`, `raw_size`, `entropy` (0–8), `characteristics` "
+            "(PE flags; empty for ELF/Mach-O). Accepts a VARCHAR path or a BLOB; unparseable or "
+            "non-binary input yields **no rows** (never an error).\n\n"
+            "Use it to find *where* in a file suspicious data lives: a high-entropy (`> ~7`) "
+            "`.text`/code section, an executable+writable section, or a section whose raw size "
+            "dwarfs its virtual size all point to packing, embedded payloads, or self-modifying "
+            "code. Cross-reference with `pe.entry_point(...)` to confirm the entry point lands in "
+            "a sane section. Static read-only; the binary is never executed."
+        ),
+        doc_md=(
+            "## sections\n\n"
+            "One row per section of the binary, with sizes and per-section entropy.\n\n"
+            "### Returns\n\n" + _SECTIONS_COLUMNS_MD + "\n\n### Notes\n\n"
+            "`characteristics` is populated for PE only. High `entropy` (`> ~7`) localizes "
+            "packing/encryption to a specific section; a large `raw_size`-vs-`virtual_size` gap "
+            "or an entry point outside an executable section are further packing signals. "
+            "Unparseable input returns no rows."
+        ),
+        keywords="sections, segments, layout, entropy, packing, .text, .data, characteristics, flags, structure",
+        relative_path="vgi_pe/tables.py",
+    ),
+    "vgi.result_columns_md": _SECTIONS_COLUMNS_MD,
+    "vgi.executable_examples": _SECTIONS_EXECUTABLE_EXAMPLES,
+}
+
+_IMPORTS_TAGS = {
+    **meta.object_tags(
+        title="Imported Symbols Table",
+        doc_llm=(
+            "Enumerate the **imported symbols** of a binary, one row per import, as "
+            "`(library, function)`. For PE the `library` is the DLL (e.g. `KERNEL32.dll`) and "
+            "`function` the imported API, or `ordinal#N` when imported by ordinal; for ELF/Mach-O "
+            "`library` is empty and `function` is the symbol. Accepts a VARCHAR path or a BLOB; "
+            "unparseable input yields no rows.\n\n"
+            "The import table is one of the richest behavioral fingerprints of a binary: which "
+            "APIs it pulls in (networking, crypto, process injection, registry, file I/O) sketches "
+            "what it *can* do without running it, and the normalized import set underlies "
+            "`pe.imphash(...)` clustering. Watch for tiny import tables (a packer that resolves "
+            "APIs at runtime) and for suspicious API combinations. Static read-only."
+        ),
+        doc_md=(
+            "## imports\n\n"
+            "One row per imported symbol, as `(library, function)`.\n\n"
+            "### Returns\n\n" + _IMPORTS_COLUMNS_MD + "\n\n### Notes\n\n"
+            "PE rows carry the DLL in `library` (functions imported by ordinal appear as "
+            "`ordinal#N`); ELF/Mach-O leave `library` empty. A suspiciously small import table "
+            "often means runtime API resolution (a packing/evasion signal). Feeds "
+            "`pe.imphash(...)`."
+        ),
+        keywords="imports, imported symbols, IAT, DLL, API, dependencies, dynamic symbols, capabilities, behavior",
+        relative_path="vgi_pe/tables.py",
+    ),
+    "vgi.result_columns_md": _IMPORTS_COLUMNS_MD,
+}
+
+_EXPORTS_TAGS = {
+    **meta.object_tags(
+        title="Exported Symbols Table",
+        doc_llm=(
+            "Enumerate the **exported symbols** of a binary, one row per export, as "
+            "`(name, address)` where `address` is the symbol's address/value (0 when "
+            "unavailable). Exports are typical of shared libraries (DLLs, `.so`, `.dylib`) and "
+            "plugin-style modules. Accepts a VARCHAR path or a BLOB; unparseable input or a binary "
+            "with no exports yields no rows.\n\n"
+            "Use it to understand a module's public API surface, to spot a DLL whose exports "
+            "mimic a legitimate system library (a side-loading / proxying tactic), or to match "
+            "named exports against known-bad indicators. Static read-only; the binary is never "
+            "executed."
+        ),
+        doc_md=(
+            "## exports\n\n"
+            "One row per exported symbol, as `(name, address)`.\n\n"
+            "### Returns\n\n" + _EXPORTS_COLUMNS_MD + "\n\n### Notes\n\n"
+            "Most relevant for shared libraries / plugins; executables often export nothing (no "
+            "rows). `address` is `0` when the value is unavailable. Exports that impersonate a "
+            "known system library are a DLL side-loading signal."
+        ),
+        keywords="exports, exported symbols, EAT, DLL, shared library, dylib, so, public API, side-loading",
+        relative_path="vgi_pe/tables.py",
+    ),
+    "vgi.result_columns_md": _EXPORTS_COLUMNS_MD,
+}
+
+_STRINGS_TAGS = {
+    **meta.object_tags(
+        title="Printable Strings Extractor",
+        doc_llm=(
+            "Extract **printable strings** from a binary, one row per string, as `(seq, value)` "
+            "in file order. It recovers both ASCII and UTF-16LE runs at least `min_len` "
+            "characters long (`min_len` defaults to 5 and is passed as the named argument "
+            "`min_len :=`). Accepts a VARCHAR path or a BLOB; output is capped for safety against "
+            "string-bomb input, and unparseable input yields no rows.\n\n"
+            "Strings are the fastest way to surface human-readable indicators inside an opaque "
+            "binary: URLs, IP addresses, file paths, registry keys, command lines, mutex names, "
+            "embedded error messages, and crypto constants. Filter `value` with SQL `LIKE`/regex "
+            "to hunt for IOCs across a corpus. Raise `min_len` to cut noise from packed samples. "
+            "Static read-only; the binary is never executed."
+        ),
+        doc_md=(
+            "## strings\n\n"
+            "One row per printable string (ASCII + UTF-16LE) of length `>= min_len`.\n\n"
+            "### Arguments\n\n"
+            "- `binary` — a VARCHAR path or a BLOB.\n"
+            "- `min_len` (named, default 5) — minimum string length to report.\n\n"
+            "### Returns\n\n" + _STRINGS_COLUMNS_MD + "\n\n### Notes\n\n"
+            "Output is bounded against string-bomb inputs. Use `WHERE value LIKE '%http%'` (and "
+            "friends) to hunt URLs, paths, registry keys, and other IOCs; raise `min_len` to "
+            "reduce noise on packed samples."
+        ),
+        keywords="strings, printable, ascii, utf-16, IOC, indicators, URLs, paths, extract, grep, hunting",
+        relative_path="vgi_pe/tables.py",
+    ),
+    "vgi.result_columns_md": _STRINGS_COLUMNS_MD,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -147,10 +314,10 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (VARCHAR path)"
         categories = ["pe", "structure"]
-        tags = {"vgi.columns_md": _SECTIONS_COLUMNS_MD}
+        tags = _SECTIONS_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT * FROM pe.sections('sample.exe') ORDER BY name",
+                sql=f"SELECT * FROM pe.sections('{_PE_FIXTURE}') ORDER BY name",
                 description="Sections of a binary file with entropy",
             ),
         ]
@@ -183,13 +350,13 @@ class SectionsBytesFunction(TableFunctionGenerator[_SectionsBytesArgs]):
         name = "sections"
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (BLOB bytes)"
         categories = ["pe", "structure"]
-        tags = {"vgi.columns_md": _SECTIONS_COLUMNS_MD}
-        examples = [
-            FunctionExample(
-                sql="SELECT * FROM pe.sections(blob) ORDER BY name",
-                description="Sections of binary bytes with entropy",
-            ),
-        ]
+        tags = _SECTIONS_TAGS
+        # No `examples` on the BLOB overload: a VGI table function only accepts
+        # *literal* parameters (not a subquery or a lateral column reference), so
+        # a runnable BLOB-input example would have to inline the whole binary as a
+        # hex literal. The VARCHAR-path overload (same `pe.main.sections` object)
+        # already carries runnable, row-returning examples, and the BLOB path is
+        # exercised end-to-end by the test suite.
 
     @classmethod
     def cardinality(cls, params: BindParams[_SectionsBytesArgs]) -> TableCardinality:
@@ -255,10 +422,10 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
         name = "imports"
         description = "Imported symbols (library, function) of a binary (VARCHAR path)"
         categories = ["pe", "imports"]
-        tags = {"vgi.columns_md": _IMPORTS_COLUMNS_MD}
+        tags = _IMPORTS_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT * FROM pe.imports('sample.exe') ORDER BY library, function",
+                sql=f"SELECT * FROM pe.imports('{_PE_FIXTURE}') ORDER BY library, function",
                 description="Imported symbols of a binary file",
             ),
         ]
@@ -291,13 +458,10 @@ class ImportsBytesFunction(TableFunctionGenerator[_ImportsBytesArgs]):
         name = "imports"
         description = "Imported symbols (library, function) of a binary (BLOB bytes)"
         categories = ["pe", "imports"]
-        tags = {"vgi.columns_md": _IMPORTS_COLUMNS_MD}
-        examples = [
-            FunctionExample(
-                sql="SELECT * FROM pe.imports(blob) ORDER BY library, function",
-                description="Imported symbols of binary bytes",
-            ),
-        ]
+        tags = _IMPORTS_TAGS
+        # See SectionsBytesFunction: the VARCHAR-path overload of this same
+        # `pe.main.imports` object carries the runnable examples; a table function
+        # only accepts literal args so a BLOB example can't reference a file.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ImportsBytesArgs]) -> TableCardinality:
@@ -363,10 +527,10 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
         name = "exports"
         description = "Exported symbols (name, address) of a binary (VARCHAR path)"
         categories = ["pe", "exports"]
-        tags = {"vgi.columns_md": _EXPORTS_COLUMNS_MD}
+        tags = _EXPORTS_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT * FROM pe.exports('sample.so') ORDER BY name",
+                sql=f"SELECT * FROM pe.exports('{_MACHO_FIXTURE}') ORDER BY name",
                 description="Exported symbols of a binary file",
             ),
         ]
@@ -399,13 +563,10 @@ class ExportsBytesFunction(TableFunctionGenerator[_ExportsBytesArgs]):
         name = "exports"
         description = "Exported symbols (name, address) of a binary (BLOB bytes)"
         categories = ["pe", "exports"]
-        tags = {"vgi.columns_md": _EXPORTS_COLUMNS_MD}
-        examples = [
-            FunctionExample(
-                sql="SELECT * FROM pe.exports(blob) ORDER BY name",
-                description="Exported symbols of binary bytes",
-            ),
-        ]
+        tags = _EXPORTS_TAGS
+        # See SectionsBytesFunction: the VARCHAR-path overload of this same
+        # `pe.main.exports` object carries the runnable examples; a table function
+        # only accepts literal args so a BLOB example can't reference a file.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ExportsBytesArgs]) -> TableCardinality:
@@ -473,14 +634,14 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (VARCHAR path)"
         categories = ["pe", "strings"]
-        tags = {"vgi.columns_md": _STRINGS_COLUMNS_MD}
+        tags = _STRINGS_TAGS
         examples = [
             FunctionExample(
-                sql="SELECT * FROM pe.strings('sample.exe') ORDER BY seq",
+                sql=f"SELECT * FROM pe.strings('{_PE_FIXTURE}') ORDER BY seq",
                 description="Printable strings of a binary file",
             ),
             FunctionExample(
-                sql="SELECT * FROM pe.strings('sample.exe', min_len := 8)",
+                sql=f"SELECT * FROM pe.strings('{_PE_FIXTURE}', min_len := 8) ORDER BY seq",
                 description="Only strings at least 8 chars long",
             ),
         ]
@@ -513,13 +674,10 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
         name = "strings"
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (BLOB bytes)"
         categories = ["pe", "strings"]
-        tags = {"vgi.columns_md": _STRINGS_COLUMNS_MD}
-        examples = [
-            FunctionExample(
-                sql="SELECT * FROM pe.strings(blob) ORDER BY seq",
-                description="Printable strings of binary bytes",
-            ),
-        ]
+        tags = _STRINGS_TAGS
+        # See SectionsBytesFunction: the VARCHAR-path overload of this same
+        # `pe.main.strings` object carries the runnable examples; a table function
+        # only accepts literal args so a BLOB example can't reference a file.
 
     @classmethod
     def cardinality(cls, params: BindParams[_StringsBytesArgs]) -> TableCardinality:

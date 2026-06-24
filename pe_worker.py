@@ -82,9 +82,34 @@ _SCHEMA_DESCRIPTION_LLM = (
     "path or a BLOB; the binary is never executed."
 )
 _SCHEMA_DESCRIPTION_MD = (
-    "Static analysis of PE/ELF/Mach-O binaries over Apache Arrow: format, sections, entropy, "
-    "imports/exports, signing, and strings. Static (read-only) — the binary is never executed."
+    "## main\n\n"
+    "Static analysis of PE/ELF/Mach-O binaries over Apache Arrow.\n\n"
+    "Scalars: `binary_format`, `machine`, `entry_point`, `is_signed`, `compile_timestamp`, "
+    "`imphash`, `section_count`, `overall_entropy`. Table functions: `sections`, `imports`, "
+    "`exports`, `strings`.\n\n"
+    "Every function accepts a VARCHAR path or a BLOB and degrades to NULL / no rows on hostile "
+    "input. Static (read-only) — the binary is never executed."
 )
+# Representative, catalog-qualified example queries for the schema (VGI506). They
+# read committed fixtures by relative path so they run against an attached worker.
+_SCHEMA_EXAMPLE_QUERIES = (
+    "SELECT pe.main.binary_format('test/sql/data/hello.exe');\n"
+    "SELECT pe.main.machine('test/sql/data/hello.exe');\n"
+    "SELECT pe.main.overall_entropy('test/sql/data/hello.exe');\n"
+    "SELECT pe.main.imphash('test/sql/data/hello.exe');\n"
+    "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC;\n"
+    "SELECT * FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10;\n"
+    "SELECT * FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10;"
+)
+_CATALOG_KEYWORDS = (
+    "pe, elf, mach-o, macho, binary analysis, malware triage, static analysis, reverse engineering, "
+    "imphash, entropy, packing, sections, imports, exports, strings, code signing, lief, executable"
+)
+_SCHEMA_KEYWORDS = (
+    "binary_format, machine, entry_point, is_signed, compile_timestamp, imphash, section_count, "
+    "overall_entropy, sections, imports, exports, strings, malware triage, static analysis"
+)
+_SOURCE_BASE = "https://github.com/Query-farm/vgi-pe/blob/main"
 
 _PE_CATALOG = Catalog(
     name="pe",
@@ -92,8 +117,10 @@ _PE_CATALOG = Catalog(
     comment="Defensive malware-triage worker: static, read-only analysis of PE/ELF/Mach-O executables as SQL functions (the binary is never executed)",  # noqa: E501
     source_url="https://github.com/Query-farm/vgi-pe",
     tags={
-        "vgi.description_llm": _CATALOG_DESCRIPTION_LLM,
-        "vgi.description_md": _CATALOG_DESCRIPTION_MD,
+        "vgi.title": "Executable Binary Triage (PE / ELF / Mach-O)",
+        "vgi.keywords": _CATALOG_KEYWORDS,
+        "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
+        "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
         "vgi.author": "Query.Farm",
         "vgi.copyright": "Copyright 2026 Query Farm LLC - https://query.farm",
         "vgi.license": "MIT",
@@ -105,8 +132,16 @@ _PE_CATALOG = Catalog(
             name="main",
             comment="Binary-analysis functions: format/architecture, entry point, signing, entropy, imphash, sections, imports, exports, and strings over PE/ELF/Mach-O input",  # noqa: E501
             tags={
-                "vgi.description_llm": _SCHEMA_DESCRIPTION_LLM,
-                "vgi.description_md": _SCHEMA_DESCRIPTION_MD,
+                "vgi.title": "Binary Triage Functions",
+                "vgi.keywords": _SCHEMA_KEYWORDS,
+                "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
+                "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
+                "vgi.source_url": f"{_SOURCE_BASE}/pe_worker.py",
+                "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
+                # VGI123 classifying tags use BARE keys (NOT vgi.-namespaced).
+                "domain": "security",
+                "category": "binary-analysis",
+                "topic": "malware-triage",
             },
             functions=list(_FUNCTIONS),
         ),
