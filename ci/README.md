@@ -24,20 +24,53 @@ extension from the Haybarn community channel:
    `INSTALL vgi FROM community;` right before each bare `LOAD vgi;`. `require-env`
    and everything else pass through untouched.
 4. **Run** — [`run-integration.sh`](run-integration.sh) stages the preprocessed
-   tree, points `VGI_PE_WORKER` at `uv run pe_worker.py`, warms the
-   extension cache once, then runs the suite in a single `haybarn-unittest`
-   invocation. Any failed assertion exits non-zero and fails the job.
+   tree (and the committed `test/sql/data/` fixtures), resolves
+   `VGI_PE_WORKER` per transport, warms the extension cache once, then runs the
+   suite in a single `haybarn-unittest` invocation. Any failed assertion exits
+   non-zero and fails the job.
+
+## Three transports
+
+The same suite runs over every VGI transport, selected by the `TRANSPORT` env
+var (the vgi extension picks the transport from the ATTACH `LOCATION` string):
+
+| `TRANSPORT`  | `VGI_PE_WORKER` (LOCATION)   | How the worker is reached                         |
+| ------------ | --------------------------- | ------------------------------------------------- |
+| `subprocess` | `uv run pe_worker.py`       | extension spawns it over stdin/stdout (default)   |
+| `http`       | `http://127.0.0.1:<port>`   | script boots `… --http --port 0 --port-file <f>`  |
+| `unix`       | `unix://<sock>`             | script boots `… --unix <sock>`                    |
+
+For `http`/`unix` the script boots the worker out-of-band with `cwd` = the stage
+dir so the relative `test/sql/data/*` fixture paths resolve, polls for the
+port-file / socket (bailing if the process dies), and trap-kills it on exit.
+
+Two transport-specific notes baked into the script:
+
+- **`http` needs `httpfs`.** The vgi HTTP transport rides DuckDB's httpfs, so the
+  script injects `INSTALL httpfs FROM core; LOAD httpfs;` after each `LOAD vgi;`
+  for the http leg only. Without it `ATTACH 'http://…'` throws "VGI HTTP
+  transport requires the httpfs extension".
+- **Silent-skip guard.** The sqllogictest runner SKIPS (exit 0!) any test whose
+  error contains "HTTP"/"Unable to connect", so a broken http/unix setup would
+  fake-pass as "All tests were skipped". The run step captures the log and fails
+  the leg if nothing actually ran.
+
+The `http` transport needs the `http` extra (waitress): the main dependency pins
+`vgi-python[http]` (so `uv run` resolves it from the PEP 723 header) and CI
+installs it explicitly with `uv sync --frozen --extra http`.
 
 ## Run it locally
 
 ```bash
-uv sync --python 3.13                       # install the worker + deps
+uv sync --python 3.13 --extra http          # install the worker + deps (+ waitress)
 # point HAYBARN_UNITTEST at a haybarn-unittest binary (or a local DuckDB
-# `unittest` built with the vgi extension), and the worker at the stdio command:
+# `unittest` built with the vgi extension); pick a transport (default subprocess):
 HAYBARN_UNITTEST=/path/to/haybarn-unittest \
-VGI_PE_WORKER="uv run --python 3.13 pe_worker.py" \
+WORKER_CMD="uv run --no-sync --python 3.13 $PWD/pe_worker.py" \
+TRANSPORT=http \
   ci/run-integration.sh
 ```
 
 Or use the Makefile target `make test-sql`, which installs `haybarn-unittest`
-as a uv tool and points the worker at `uv run --python 3.13 pe_worker.py`.
+as a uv tool and points the worker at `uv run --python 3.13 pe_worker.py`
+(subprocess transport).

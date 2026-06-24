@@ -32,12 +32,20 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "vgi-python>=0.8.3",
+    "vgi-python[http]>=0.8.3",
     "lief>=0.15",
     "pyarrow",
 ]
 
 [project.optional-dependencies]
+# HTTP transport: the worker can serve over HTTP (`pe_worker.py --http`) in
+# addition to stdio. That path needs vgi-python's `http` extra (waitress). CI's
+# http transport leg installs this via `uv sync --extra http`. (The main
+# dependency already pins `vgi-python[http]`, so a plain sync also pulls it; this
+# explicit extra keeps the `--extra http` install knob the CI job uses.)
+http = [
+    "vgi-python[http]>=0.8.3",
+]
 dev = [
     "pytest>=8",
     "ruff",
