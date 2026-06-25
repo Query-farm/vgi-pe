@@ -1,37 +1,43 @@
 """Shared helpers for per-object discovery/description metadata (strict profile).
 
-The ``vgi-lint`` strict profile (0.26.0) expects these tags on **every** function
-and table. Each function/table surfaces them in its ``Meta.tags``:
+The ``vgi-lint`` strict profile expects these tags on **every** function and
+table. Each function/table surfaces them in its ``Meta.tags``:
 
 - ``vgi.title`` (VGI124)         — human-friendly display name (must NOT
   normalize-equal the machine name, or VGI125 fires).
 - ``vgi.doc_llm`` (VGI112)       — a Markdown narrative aimed at an LLM/agent.
 - ``vgi.doc_md`` (VGI113)        — a Markdown narrative aimed at human docs
   (must be DISTINCT content from ``vgi.doc_llm``).
-- ``vgi.keywords`` (VGI126)      — comma-separated search terms/synonyms.
-- ``vgi.source_url`` (VGI128)    — link to the implementing source file.
+- ``vgi.keywords`` (VGI126/VGI138) — search terms/synonyms, serialized as a
+  **JSON array of strings** (VGI138 rejects a bare comma-separated string).
 
-``source_url(file)`` builds the canonical GitHub blob URL so every object points
-at exactly where it is implemented.
+``vgi.source_url`` is intentionally NOT set per-object: VGI139 requires the
+provenance link to live on the **catalog** only, not be repeated on every
+object. ``keywords_array`` converts a comma-separated keyword string into the
+JSON-array form the linter requires.
 """
 
 from __future__ import annotations
 
-# Base GitHub blob URL for source files in this repo (pinned to ``main``).
-_SOURCE_BASE = "https://github.com/Query-farm/vgi-pe/blob/main"
+import json
 
 
-def source_url(relative_path: str) -> str:
-    """Build the implementation ``vgi.source_url`` for a file in the repo.
+def keywords_array(keywords: str) -> str:
+    """Serialize comma-separated keywords into a JSON array of strings (VGI138).
 
     Args:
-        relative_path: Path of the implementing file relative to the repo root,
-            e.g. ``vgi_pe/scalars.py``.
+        keywords: Comma-separated search terms/synonyms, e.g. ``"pe, elf"``.
 
     Returns:
-        The canonical GitHub blob URL for that file on ``main``.
+        A JSON array string of the trimmed, de-duplicated terms, e.g.
+        ``'["pe", "elf"]'`` — the form ``vgi.keywords`` must take.
     """
-    return f"{_SOURCE_BASE}/{relative_path}"
+    seen: dict[str, None] = {}
+    for term in keywords.split(","):
+        cleaned = term.strip()
+        if cleaned and cleaned not in seen:
+            seen[cleaned] = None
+    return json.dumps(list(seen), ensure_ascii=False)
 
 
 def object_tags(
@@ -42,24 +48,26 @@ def object_tags(
     keywords: str,
     relative_path: str,
 ) -> dict[str, str]:
-    """Build the five standard per-object discovery/description tags.
+    """Build the standard per-object discovery/description tags.
 
     Args:
         title: Human-friendly display name (VGI124).
         doc_llm: Markdown narrative aimed at LLMs/agents (VGI112).
         doc_md: Markdown narrative aimed at human docs (VGI113); must differ from
             ``doc_llm``.
-        keywords: Comma-separated search terms/synonyms (VGI126).
-        relative_path: Implementing source file relative to the repo root
-            (VGI128).
+        keywords: Comma-separated search terms/synonyms (VGI126); serialized into
+            a JSON array of strings for ``vgi.keywords`` (VGI138).
+        relative_path: Implementing source file relative to the repo root.
+            Accepted for documentation/consistency but NOT emitted as a per-object
+            ``vgi.source_url`` — VGI139 keeps that link on the catalog only.
 
     Returns:
         A tag dict suitable for spreading into a function's ``Meta.tags``.
     """
+    del relative_path  # source_url is catalog-only (VGI139); see module docstring.
     return {
         "vgi.title": title,
         "vgi.doc_llm": doc_llm,
         "vgi.doc_md": doc_md,
-        "vgi.keywords": keywords,
-        "vgi.source_url": source_url(relative_path),
+        "vgi.keywords": keywords_array(keywords),
     }

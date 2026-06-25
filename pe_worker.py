@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.8.4",
+#     "vgi-python[http]>=0.8.5",
 #     "lief>=0.15",
 #     "pyarrow",
 # ]
@@ -43,6 +43,7 @@ from __future__ import annotations
 from vgi import Worker
 from vgi.catalog import Catalog, Schema
 
+from vgi_pe.meta import keywords_array
 from vgi_pe.scalars import SCALAR_FUNCTIONS
 from vgi_pe.tables import TABLE_FUNCTIONS
 
@@ -109,7 +110,6 @@ _SCHEMA_KEYWORDS = (
     "binary_format, machine, entry_point, is_signed, compile_timestamp, imphash, section_count, "
     "overall_entropy, sections, imports, exports, strings, malware triage, static analysis"
 )
-_SOURCE_BASE = "https://github.com/Query-farm/vgi-pe/blob/main"
 
 _PE_CATALOG = Catalog(
     name="pe",
@@ -118,7 +118,7 @@ _PE_CATALOG = Catalog(
     source_url="https://github.com/Query-farm/vgi-pe",
     tags={
         "vgi.title": "Executable Binary Triage (PE / ELF / Mach-O)",
-        "vgi.keywords": _CATALOG_KEYWORDS,
+        "vgi.keywords": keywords_array(_CATALOG_KEYWORDS),
         "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
         "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
         "vgi.author": "Query.Farm",
@@ -133,10 +133,11 @@ _PE_CATALOG = Catalog(
             comment="Binary-analysis functions: format/architecture, entry point, signing, entropy, imphash, sections, imports, exports, and strings over PE/ELF/Mach-O input",  # noqa: E501
             tags={
                 "vgi.title": "Binary Triage Functions",
-                "vgi.keywords": _SCHEMA_KEYWORDS,
+                "vgi.keywords": keywords_array(_SCHEMA_KEYWORDS),
                 "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
                 "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
-                "vgi.source_url": f"{_SOURCE_BASE}/pe_worker.py",
+                # VGI139: vgi.source_url lives on the catalog only, not repeated
+                # per-object (schema/function). The catalog carries source_url.
                 "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
                 # VGI123 classifying tags use BARE keys (NOT vgi.-namespaced).
                 "domain": "security",
