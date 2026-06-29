@@ -86,7 +86,7 @@ _CATALOG_DESCRIPTION_MD = (
     "API. See the [LIEF source on GitHub](https://github.com/lief-project/LIEF) and the "
     "[LIEF documentation](https://lief.re/doc/stable/index.html) for format details. The worker "
     "wraps LIEF in total, crash-proof extractors and exposes them as Arrow-native DuckDB functions; "
-    "bounds on input size, string counts, and row counts keep even adversarial \"bomb\" inputs from "
+    'bounds on input size, string counts, and row counts keep even adversarial "bomb" inputs from '
     "exhausting memory.\n\n"
     "Scalar functions answer one fact per binary: `binary_format` (PE/ELF/Mach-O detection), "
     "`machine` (abstract architecture), `entry_point`, `is_signed` (code-signing status), "
