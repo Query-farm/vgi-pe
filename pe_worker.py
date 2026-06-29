@@ -68,6 +68,7 @@ _CATALOG_DESCRIPTION_LLM = (
 )
 _CATALOG_DESCRIPTION_MD = (
     "# Executable Binary Analysis in SQL (PE / ELF / Mach-O)\n\n"
+    "![LIEF logo](https://raw.githubusercontent.com/lief-project/LIEF/main/doc/sphinx/_static/logo_blue.png)\n\n"
     "**Static, read-only malware triage and binary forensics over Apache Arrow** — parse Windows "
     "PE, Linux ELF, and macOS Mach-O executables and query their format, architecture, entropy, "
     "imports, exports, sections, and strings directly from DuckDB SQL.\n\n"
