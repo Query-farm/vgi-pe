@@ -32,7 +32,7 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "vgi-python[http]>=0.8.5",
+    "vgi-python[http]>=0.9.0",
     "lief>=0.15",
     "pyarrow",
 ]
@@ -44,7 +44,7 @@ dependencies = [
 # dependency already pins `vgi-python[http]`, so a plain sync also pulls it; this
 # explicit extra keeps the `--extra http` install knob the CI job uses.)
 http = [
-    "vgi-python[http]>=0.8.5",
+    "vgi-python[http]>=0.9.0",
 ]
 dev = [
     "pytest>=8",
