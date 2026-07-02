@@ -157,6 +157,7 @@ _SECTIONS_TAGS = {
             "Unparseable input returns no rows."
         ),
         keywords="sections, segments, layout, entropy, packing, .text, .data, characteristics, flags, structure",
+        category="structure",
         relative_path="vgi_pe/tables.py",
     ),
     "vgi.result_columns_md": _SECTIONS_COLUMNS_MD,
@@ -188,6 +189,7 @@ _IMPORTS_TAGS = {
             "`pe.imphash(...)`."
         ),
         keywords="imports, imported symbols, IAT, DLL, API, dependencies, dynamic symbols, capabilities, behavior",
+        category="symbols",
         relative_path="vgi_pe/tables.py",
     ),
     "vgi.result_columns_md": _IMPORTS_COLUMNS_MD,
@@ -216,6 +218,7 @@ _EXPORTS_TAGS = {
             "known system library are a DLL side-loading signal."
         ),
         keywords="exports, exported symbols, EAT, DLL, shared library, dylib, so, public API, side-loading",
+        category="symbols",
         relative_path="vgi_pe/tables.py",
     ),
     "vgi.result_columns_md": _EXPORTS_COLUMNS_MD,
@@ -248,6 +251,7 @@ _STRINGS_TAGS = {
             "reduce noise on packed samples."
         ),
         keywords="strings, printable, ascii, utf-16, IOC, indicators, URLs, paths, extract, grep, hunting",
+        category="strings",
         relative_path="vgi_pe/tables.py",
     ),
     "vgi.result_columns_md": _STRINGS_COLUMNS_MD,

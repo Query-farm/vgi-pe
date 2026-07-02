@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.8.5",
+#     "vgi-python[http]>=0.9.0",
 #     "lief>=0.15",
 #     "pyarrow",
 # ]
@@ -39,6 +39,8 @@ Usage:
 """
 
 from __future__ import annotations
+
+import json
 
 from vgi import Worker
 from vgi.catalog import Catalog, Schema
@@ -88,18 +90,16 @@ _CATALOG_DESCRIPTION_MD = (
     "wraps LIEF in total, crash-proof extractors and exposes them as Arrow-native DuckDB functions; "
     'bounds on input size, string counts, and row counts keep even adversarial "bomb" inputs from '
     "exhausting memory.\n\n"
-    "Scalar functions answer one fact per binary: `binary_format` (PE/ELF/Mach-O detection), "
-    "`machine` (abstract architecture), `entry_point`, `is_signed` (code-signing status), "
-    "`compile_timestamp` (PE build time), `imphash` (the classic import hash for clustering related "
-    "samples), `section_count`, and `overall_entropy` (whole-file Shannon entropy, a packing and "
-    "encryption signal). Table functions return sets of rows: `sections` (name, size, and "
-    "per-section entropy), `imports`, `exports`, and `strings` (printable strings with an optional "
-    "`min_len :=` filter). Every function accepts the binary as either a `VARCHAR` filesystem path "
-    "or a `BLOB` of raw bytes, so you can analyze files on disk or bytes already living in a table. "
-    "For example: `SELECT pe.imphash('sample.exe')`, "
-    "`SELECT name, entropy FROM pe.sections('sample.exe') ORDER BY entropy DESC`, or "
-    "`SELECT * FROM pe.strings('sample.exe', min_len := 8)`. Static analysis only — the binary is "
-    "never executed."
+    "The catalog exposes two shapes of query. **Per-binary facts** answer a single question about a "
+    "sample — its container format and CPU architecture, its entry point, whether it is code-signed, "
+    "its build timestamp and import-hash fingerprint, and its whole-file entropy — so they slot "
+    "directly into a projection or a filter and scale across an entire corpus. **Set-returning "
+    "functions** expand one binary into many rows — its per-section layout with entropy, its "
+    "imported and exported symbols, and its printable strings — for row-level IOC hunting, "
+    "filtering, and joining. Every function accepts the binary as either a filesystem path it opens "
+    "or raw bytes passed inline, so you can analyze files on disk or blobs already living in a "
+    "table, and each pairs its narrative with runnable, tested example queries. Discover the exact "
+    "set of functions by listing the schema. Static analysis only — the binary is never executed."
 )
 _SCHEMA_DESCRIPTION_LLM = (
     "Static binary-analysis functions over PE/ELF/Mach-O images: format and architecture detection, "
@@ -110,9 +110,12 @@ _SCHEMA_DESCRIPTION_LLM = (
 _SCHEMA_DESCRIPTION_MD = (
     "## main\n\n"
     "Static analysis of PE/ELF/Mach-O binaries over Apache Arrow.\n\n"
-    "Scalars: `binary_format`, `machine`, `entry_point`, `is_signed`, `compile_timestamp`, "
-    "`imphash`, `section_count`, `overall_entropy`. Table functions: `sections`, `imports`, "
-    "`exports`, `strings`.\n\n"
+    "This schema groups the worker's functions into navigation categories covering format and "
+    "architecture detection, structural layout, entropy and packing signals, signing and build "
+    "provenance, imported/exported symbols, and printable-string extraction. Per-binary scalar "
+    "facts fold into projections and filters; set-returning functions expand a single sample into "
+    "rows for hunting and joining. List the schema to discover the exact functions and their "
+    "categories.\n\n"
     "Every function accepts a VARCHAR path or a BLOB and degrades to NULL / no rows on hostile "
     "input. Static (read-only) — the binary is never executed."
 )
@@ -136,6 +139,116 @@ _SCHEMA_KEYWORDS = (
     "overall_entropy, sections, imports, exports, strings, malware triage, static analysis"
 )
 
+# VGI413/VGI408-412: the schema's ordered category registry. Every function
+# carries a `vgi.category` (set via `meta.object_tags(category=...)`) naming one
+# of these slugs; array order is the display order and each category has at least
+# one member (VGI412). These are the navigation sections the worker groups its
+# functions into.
+_SCHEMA_CATEGORIES = json.dumps(
+    [
+        {
+            "name": "format",
+            "title": "Format & Architecture",
+            "description": "Detect the container format (PE/ELF/Mach-O) and target CPU architecture.",
+        },
+        {
+            "name": "structure",
+            "title": "Structure & Layout",
+            "description": "Entry point, section count, and per-section layout of the image.",
+        },
+        {
+            "name": "entropy",
+            "title": "Entropy & Packing",
+            "description": "Whole-file Shannon entropy as a packing/encryption signal.",
+        },
+        {
+            "name": "signing",
+            "title": "Signing & Provenance",
+            "description": "Code-signing status, PE build timestamp, and import-hash clustering.",
+        },
+        {
+            "name": "symbols",
+            "title": "Imports & Exports",
+            "description": "Imported and exported symbol tables.",
+        },
+        {
+            "name": "strings",
+            "title": "Strings",
+            "description": "Printable ASCII/UTF-16 string extraction and IOC hunting.",
+        },
+    ]
+)
+
+# VGI152/VGI407: a fixed, version-controlled agent-suitability suite. `vgi-lint
+# simulate` / the --agent-check pass run an LLM analyst through each `prompt`
+# (the only field it sees) against the attached worker; `reference_sql` is the
+# grader-only canonical solution. Each task targets a committed fixture by
+# relative path (worker cwd = repo root) so it runs deterministically.
+# The scalar tasks return a single value whose auto-generated column name depends
+# on exactly how the analyst spells the call, so they are graded by VALUE only
+# (`ignore_column_names`); the deterministic reference below fixes the expected
+# value. The one multi-column task pins explicit column names in the prompt.
+_AGENT_TEST_TASKS = json.dumps(
+    [
+        {
+            "name": "detect-format",
+            "prompt": (
+                "Using the attached 'pe' worker, return the single executable container-format "
+                "value (PE, ELF, or Mach-O) of the file at path 'test/sql/data/hello.exe'."
+            ),
+            "reference_sql": "SELECT pe.main.binary_format('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "target-architecture",
+            "prompt": (
+                "Using the attached 'pe' worker, return the single CPU-architecture value that the "
+                "binary at path 'test/sql/data/hello.exe' targets."
+            ),
+            "reference_sql": "SELECT pe.main.machine('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "whole-file-entropy",
+            "prompt": (
+                "Using the attached 'pe' worker, return the raw whole-file Shannon entropy value "
+                "(bits per byte, do not round) of the file at path 'test/sql/data/hello.exe'."
+            ),
+            "reference_sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "highest-entropy-section",
+            "prompt": (
+                "Using the attached 'pe' worker, find the single section of "
+                "'test/sql/data/hello.exe' with the highest per-section entropy. Return exactly "
+                "two columns named `name` and `entropy` for that one section."
+            ),
+            "reference_sql": (
+                "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 1"
+            ),
+        },
+        {
+            "name": "count-imports",
+            "prompt": (
+                "Using the attached 'pe' worker, return the single count of imported symbols in "
+                "the binary at path 'test/sql/data/hello.exe'."
+            ),
+            "reference_sql": "SELECT count(*) AS n FROM pe.main.imports('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "count-long-strings",
+            "prompt": (
+                "Using the attached 'pe' worker, return the single count of printable strings of "
+                "length 8 or more in the file at path 'test/sql/data/hello.exe'."
+            ),
+            "reference_sql": ("SELECT count(*) AS n FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)"),
+            "ignore_column_names": True,
+        },
+    ]
+)
+
 _PE_CATALOG = Catalog(
     name="pe",
     default_schema="main",
@@ -151,6 +264,8 @@ _PE_CATALOG = Catalog(
         "vgi.license": "MIT",
         "vgi.support_contact": "https://github.com/Query-farm/vgi-pe/issues",
         "vgi.support_policy_url": "https://github.com/Query-farm/vgi-pe/blob/main/README.md",
+        # VGI152/VGI407: the fixed agent-suitability suite (catalog-only tag).
+        "vgi.agent_test_tasks": _AGENT_TEST_TASKS,
     },
     schemas=[
         Schema(
@@ -164,9 +279,11 @@ _PE_CATALOG = Catalog(
                 # VGI139: vgi.source_url lives on the catalog only, not repeated
                 # per-object (schema/function). The catalog carries source_url.
                 "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
+                # VGI413/VGI408-412: the schema's ordered category registry; each
+                # function names one slug via its vgi.category tag.
+                "vgi.categories": _SCHEMA_CATEGORIES,
                 # VGI123 classifying tags use BARE keys (NOT vgi.-namespaced).
                 "domain": "security",
-                "category": "binary-analysis",
                 "topic": "malware-triage",
             },
             functions=list(_FUNCTIONS),

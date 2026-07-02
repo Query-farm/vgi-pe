@@ -69,6 +69,16 @@ dev = [
 [tool.vgi-lint-check.per_object."pe.main.strings"]
 ignore = ["VGI305"]
 
+[tool.vgi-lint-check.options]
+# VGI315: the polymorphic `binary` argument is deliberately declared with two
+# DuckDB types — VARCHAR (a filesystem path the worker opens) and BLOB (raw
+# bytes) — as two overloads sharing one function name, the worker's core
+# path/bytes idiom (see CLAUDE.md). The type "collision" on `binary` is
+# intentional and consistent across every function, so exempt that one argument
+# name from the single-type check (columns are unaffected — no column is named
+# `binary`).
+type_consistency_ignore_names = ["binary"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

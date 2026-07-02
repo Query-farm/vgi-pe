@@ -107,6 +107,7 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
         "gates which other functions apply."
     ),
     keywords="format, file type, magic, PE, ELF, Mach-O, MachO, executable, container, detect, identify, binary type",
+    category="format",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -191,6 +192,7 @@ _IS_SIGNED_TAGS = meta.object_tags(
         "cryptographic *validity* — verify the chain separately if trust matters."
     ),
     keywords="signed, signature, code signing, authenticode, codesign, trust, certificate, PE, Mach-O, security",
+    category="signing",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -272,6 +274,7 @@ _ENTRY_POINT_TAGS = meta.object_tags(
         "entry point in a high-entropy or writable section is a common packing/injection signal."
     ),
     keywords="entry point, entrypoint, AddressOfEntryPoint, start address, OEP, virtual address, structure",
+    category="structure",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -353,6 +356,7 @@ _MACHINE_TAGS = meta.object_tags(
         "`NULL` for input that cannot be parsed."
     ),
     keywords="machine, architecture, arch, cpu, x86, x86_64, amd64, i386, arm, arm64, aarch64, ISA, structure",
+    category="format",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -451,6 +455,7 @@ _COMPILE_TIMESTAMP_TAGS = meta.object_tags(
         "round numbers) are a triage signal, not an error."
     ),
     keywords="compile timestamp, build time, TimeDateStamp, PE header, provenance, timeline, metadata, epoch",
+    category="signing",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -532,6 +537,7 @@ _SECTION_COUNT_TAGS = meta.object_tags(
         "`pe.sections(...)`; very low or very high counts are mild packing/obfuscation signals."
     ),
     keywords="section count, sections, number of sections, segments, layout, structure, count",
+    category="structure",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -616,6 +622,7 @@ _OVERALL_ENTROPY_TAGS = meta.object_tags(
         "input. For where the high entropy lives, see per-section entropy in `pe.sections(...)`."
     ),
     keywords="entropy, shannon, packing, packed, compressed, encrypted, obfuscation, randomness, triage",
+    category="entropy",
     relative_path="vgi_pe/scalars.py",
 )
 
@@ -700,6 +707,7 @@ _IMPHASH_TAGS = meta.object_tags(
         "it as a strong hint rather than proof."
     ),
     keywords="imphash, import hash, pehash, clustering, family, attribution, malware, fingerprint, MD5, imports",
+    category="signing",
     relative_path="vgi_pe/scalars.py",
 )
 

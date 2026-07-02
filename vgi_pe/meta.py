@@ -10,6 +10,8 @@ table. Each function/table surfaces them in its ``Meta.tags``:
   (must be DISTINCT content from ``vgi.doc_llm``).
 - ``vgi.keywords`` (VGI126/VGI138) — search terms/synonyms, serialized as a
   **JSON array of strings** (VGI138 rejects a bare comma-separated string).
+- ``vgi.category`` (VGI409/VGI411) — the object's single primary category; must
+  name one of the slugs in the schema's ``vgi.categories`` registry.
 
 ``vgi.source_url`` is intentionally NOT set per-object: VGI139 requires the
 provenance link to live on the **catalog** only, not be repeated on every
@@ -46,6 +48,7 @@ def object_tags(
     doc_llm: str,
     doc_md: str,
     keywords: str,
+    category: str,
     relative_path: str,
 ) -> dict[str, str]:
     """Build the standard per-object discovery/description tags.
@@ -57,6 +60,9 @@ def object_tags(
             ``doc_llm``.
         keywords: Comma-separated search terms/synonyms (VGI126); serialized into
             a JSON array of strings for ``vgi.keywords`` (VGI138).
+        category: The object's single primary ``vgi.category`` (VGI409/VGI411) —
+            must be one of the ``name`` slugs in the owning schema's
+            ``vgi.categories`` registry (see ``pe_worker`` ``_SCHEMA_CATEGORIES``).
         relative_path: Implementing source file relative to the repo root.
             Accepted for documentation/consistency but NOT emitted as a per-object
             ``vgi.source_url`` — VGI139 keeps that link on the catalog only.
@@ -70,4 +76,5 @@ def object_tags(
         "vgi.doc_llm": doc_llm,
         "vgi.doc_md": doc_md,
         "vgi.keywords": keywords_array(keywords),
+        "vgi.category": category,
     }
