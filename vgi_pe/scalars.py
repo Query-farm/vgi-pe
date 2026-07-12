@@ -97,14 +97,11 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
     doc_md=(
         "## binary_format\n\n"
         "Returns the executable container format of a binary as `PE`, `ELF`, or `MachO`.\n\n"
-        "### Usage\n\n"
-        "```sql\n"
-        "SELECT pe.binary_format('malware.bin');   -- 'PE'\n"
-        "SELECT pe.binary_format(content) FROM read_blob('s.elf');\n"
-        "```\n\n"
-        "Accepts a VARCHAR path or a BLOB. Returns `NULL` for NULL, empty, or unrecognizable "
-        "input — never an error. Typically the first step in a triage pipeline because the format "
-        "gates which other functions apply."
+        "Call it with a single argument — a VARCHAR filesystem path the worker opens, or a BLOB "
+        "of raw bytes — and it returns the container-format string (for example `PE` for a "
+        "Windows executable). Returns `NULL` for NULL, empty, or unrecognizable input — never an "
+        "error. Typically the first step in a triage pipeline because the format gates which other "
+        "functions apply. Ready-to-run example queries are attached to this function."
     ),
     keywords="format, file type, magic, PE, ELF, Mach-O, MachO, executable, container, detect, identify, binary type",
     category="format",
@@ -124,7 +121,7 @@ class BinaryFormatPathFunction(ScalarFunction):
         tags = _BINARY_FORMAT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.binary_format('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.binary_format('{_PE_FIXTURE}')",
                 description="Detect the executable format of a file",
             ),
         ]
@@ -149,7 +146,7 @@ class BinaryFormatBytesFunction(ScalarFunction):
         tags = _BINARY_FORMAT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.binary_format({_PE_BLOB})",
+                sql=f"SELECT pe.main.binary_format({_PE_BLOB})",
                 description="Detect the executable format of bytes",
             ),
         ]
@@ -209,7 +206,7 @@ class IsSignedPathFunction(ScalarFunction):
         tags = _IS_SIGNED_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.is_signed('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.is_signed('{_PE_FIXTURE}')",
                 description="Whether a binary file is code-signed",
             ),
         ]
@@ -234,7 +231,7 @@ class IsSignedBytesFunction(ScalarFunction):
         tags = _IS_SIGNED_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.is_signed({_PE_BLOB})",
+                sql=f"SELECT pe.main.is_signed({_PE_BLOB})",
                 description="Whether binary bytes are code-signed",
             ),
         ]
@@ -291,7 +288,7 @@ class EntryPointPathFunction(ScalarFunction):
         tags = _ENTRY_POINT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.entry_point('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.entry_point('{_PE_FIXTURE}')",
                 description="Entry-point address of a binary file",
             ),
         ]
@@ -316,7 +313,7 @@ class EntryPointBytesFunction(ScalarFunction):
         tags = _ENTRY_POINT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.entry_point({_PE_BLOB})",
+                sql=f"SELECT pe.main.entry_point({_PE_BLOB})",
                 description="Entry-point address of binary bytes",
             ),
         ]
@@ -373,7 +370,7 @@ class MachinePathFunction(ScalarFunction):
         tags = _MACHINE_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.machine('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.machine('{_PE_FIXTURE}')",
                 description="Architecture of a binary file",
             ),
         ]
@@ -398,7 +395,7 @@ class MachineBytesFunction(ScalarFunction):
         tags = _MACHINE_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.machine({_PE_BLOB})",
+                sql=f"SELECT pe.main.machine({_PE_BLOB})",
                 description="Architecture of binary bytes",
             ),
         ]
@@ -472,7 +469,7 @@ class CompileTimestampPathFunction(ScalarFunction):
         tags = _COMPILE_TIMESTAMP_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.compile_timestamp('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.compile_timestamp('{_PE_FIXTURE}')",
                 description="PE compile timestamp of a binary file",
             ),
         ]
@@ -497,7 +494,7 @@ class CompileTimestampBytesFunction(ScalarFunction):
         tags = _COMPILE_TIMESTAMP_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.compile_timestamp({_PE_BLOB})",
+                sql=f"SELECT pe.main.compile_timestamp({_PE_BLOB})",
                 description="PE compile timestamp of binary bytes",
             ),
         ]
@@ -554,7 +551,7 @@ class SectionCountPathFunction(ScalarFunction):
         tags = _SECTION_COUNT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.section_count('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.section_count('{_PE_FIXTURE}')",
                 description="Section count of a binary file",
             ),
         ]
@@ -579,7 +576,7 @@ class SectionCountBytesFunction(ScalarFunction):
         tags = _SECTION_COUNT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.section_count({_PE_BLOB})",
+                sql=f"SELECT pe.main.section_count({_PE_BLOB})",
                 description="Section count of binary bytes",
             ),
         ]
@@ -639,7 +636,7 @@ class OverallEntropyPathFunction(ScalarFunction):
         tags = _OVERALL_ENTROPY_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.overall_entropy('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.overall_entropy('{_PE_FIXTURE}')",
                 description="Overall entropy of a binary file",
             ),
         ]
@@ -664,7 +661,7 @@ class OverallEntropyBytesFunction(ScalarFunction):
         tags = _OVERALL_ENTROPY_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.overall_entropy({_PE_BLOB})",
+                sql=f"SELECT pe.main.overall_entropy({_PE_BLOB})",
                 description="Overall entropy of binary bytes",
             ),
         ]
@@ -698,13 +695,12 @@ _IMPHASH_TAGS = meta.object_tags(
     doc_md=(
         "## imphash\n\n"
         "The PE import hash — MD5 of the normalized import table — as a hex string (PE only).\n\n"
-        "### Usage\n\n"
-        "```sql\n"
-        "SELECT pe.imphash(path) AS h, count(*) FROM samples GROUP BY h ORDER BY 2 DESC;\n"
-        "```\n\n"
-        "Returns `NULL` for ELF, Mach-O, and unparseable input. Samples sharing an imphash are "
-        "likely the same family/build; packing or import obfuscation weakens the signal, so treat "
-        "it as a strong hint rather than proof."
+        "Call it with one argument (a VARCHAR path or a BLOB) to get the sample's 32-character "
+        "hex import hash, or `NULL` for ELF, Mach-O, and unparseable input. Because two PEs built "
+        "from the same toolchain and import table share an imphash, it is a classic clustering / "
+        "family-attribution key: group a corpus by this value to bucket related samples. Packing "
+        "or import obfuscation weakens the signal, so treat a match as a strong hint rather than "
+        "proof. Ready-to-run example queries are attached to this function."
     ),
     keywords="imphash, import hash, pehash, clustering, family, attribution, malware, fingerprint, MD5, imports",
     category="signing",
@@ -724,7 +720,7 @@ class ImphashPathFunction(ScalarFunction):
         tags = _IMPHASH_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.imphash('{_PE_FIXTURE}')",
+                sql=f"SELECT pe.main.imphash('{_PE_FIXTURE}')",
                 description="Import hash of a PE file",
             ),
         ]
@@ -749,7 +745,7 @@ class ImphashBytesFunction(ScalarFunction):
         tags = _IMPHASH_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.imphash({_PE_BLOB})",
+                sql=f"SELECT pe.main.imphash({_PE_BLOB})",
                 description="Import hash of PE bytes",
             ),
         ]

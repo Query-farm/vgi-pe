@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.9.0",
+#     "vgi-python[http]>=0.14.0,<0.15",
 #     "lief>=0.15",
 #     "pyarrow",
 # ]
@@ -43,11 +43,11 @@ from __future__ import annotations
 import json
 
 from vgi import Worker
-from vgi.catalog import Catalog, Schema
+from vgi.catalog import Catalog, Schema, Table
 
 from vgi_pe.meta import keywords_array
 from vgi_pe.scalars import SCALAR_FUNCTIONS
-from vgi_pe.tables import TABLE_FUNCTIONS
+from vgi_pe.tables import TABLE_FUNCTIONS, AnalysesFunction
 
 _FUNCTIONS: list[type] = [
     *SCALAR_FUNCTIONS,
@@ -122,13 +122,14 @@ _SCHEMA_DESCRIPTION_MD = (
 # Representative, catalog-qualified example queries for the schema (VGI506). They
 # read committed fixtures by relative path so they run against an attached worker.
 _SCHEMA_EXAMPLE_QUERIES = (
+    "SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name;\n"
     "SELECT pe.main.binary_format('test/sql/data/hello.exe');\n"
     "SELECT pe.main.machine('test/sql/data/hello.exe');\n"
     "SELECT pe.main.overall_entropy('test/sql/data/hello.exe');\n"
     "SELECT pe.main.imphash('test/sql/data/hello.exe');\n"
     "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC;\n"
-    "SELECT * FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10;\n"
-    "SELECT * FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10;"
+    "SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10;\n"
+    "SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10;"
 )
 _CATALOG_KEYWORDS = (
     "pe, elf, mach-o, macho, binary analysis, malware triage, static analysis, reverse engineering, "
@@ -176,24 +177,37 @@ _SCHEMA_CATEGORIES = json.dumps(
             "title": "Strings",
             "description": "Printable ASCII/UTF-16 string extraction and IOC hunting.",
         },
+        {
+            "name": "discovery",
+            "title": "Discovery & Catalog",
+            "description": "Browse the worker's analysis catalog without supplying a binary.",
+        },
     ]
 )
 
-# VGI152/VGI407: a fixed, version-controlled agent-suitability suite. `vgi-lint
-# simulate` / the --agent-check pass run an LLM analyst through each `prompt`
-# (the only field it sees) against the attached worker; `reference_sql` is the
-# grader-only canonical solution. Each task targets a committed fixture by
-# relative path (worker cwd = repo root) so it runs deterministically.
-# The scalar tasks return a single value whose auto-generated column name depends
-# on exactly how the analyst spells the call, so they are graded by VALUE only
-# (`ignore_column_names`); the deterministic reference below fixes the expected
-# value. The one multi-column task pins explicit column names in the prompt.
+# VGI152/VGI407/VGI520/VGI920: a fixed, version-controlled agent-suitability
+# suite. The --ai agent-simulation pass runs an LLM analyst through each `prompt`
+# (the ONLY field it sees) against the attached worker and grades its answer
+# against the grader-only `reference_sql`. Every function and the `analyses`
+# discovery table is exercised by at least one task (VGI520), and each targets a
+# committed fixture by relative path (worker cwd = repo root) so it runs
+# deterministically.
+#
+# Grading discipline (VGI920): raw floats and raw row-counts are brittle to grade
+# — the analyst rounds, renames, or the value shifts with a library version — so
+# every quantitative task is framed as a yes/no THRESHOLD predicate returning a
+# stable BOOLEAN. Only genuinely fixed strings (format, architecture, imphash of
+# the byte-deterministic PE) are compared exactly. All tasks return a single
+# value whose column label depends on how the analyst spells the call, so they
+# grade by VALUE only (`ignore_column_names`). Every reference value below was
+# verified by actually running the query against the committed fixtures.
 _AGENT_TEST_TASKS = json.dumps(
     [
+        # --- format & architecture (stable strings) ---
         {
             "name": "detect-format",
             "prompt": (
-                "Using the attached 'pe' worker, return the single executable container-format "
+                "Using the attached 'pe' worker, return the executable container-format "
                 "value (PE, ELF, or Mach-O) of the file at path 'test/sql/data/hello.exe'."
             ),
             "reference_sql": "SELECT pe.main.binary_format('test/sql/data/hello.exe')",
@@ -202,52 +216,143 @@ _AGENT_TEST_TASKS = json.dumps(
         {
             "name": "target-architecture",
             "prompt": (
-                "Using the attached 'pe' worker, return the single CPU-architecture value that the "
+                "Using the attached 'pe' worker, return the CPU-architecture value that the "
                 "binary at path 'test/sql/data/hello.exe' targets."
             ),
             "reference_sql": "SELECT pe.main.machine('test/sql/data/hello.exe')",
             "ignore_column_names": True,
         },
+        # --- structure (threshold predicates) ---
         {
-            "name": "whole-file-entropy",
+            "name": "entry-point-high",
             "prompt": (
-                "Using the attached 'pe' worker, return the raw whole-file Shannon entropy value "
-                "(bits per byte, do not round) of the file at path 'test/sql/data/hello.exe'."
+                "Using the attached 'pe' worker, is the entry-point virtual address of the file "
+                "at path 'test/sql/data/hello.exe' greater than 1000000000? Return a boolean."
             ),
-            "reference_sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe')",
+            "reference_sql": "SELECT pe.main.entry_point('test/sql/data/hello.exe') > 1000000000",
             "ignore_column_names": True,
         },
         {
-            "name": "highest-entropy-section",
+            "name": "many-sections",
             "prompt": (
-                "Using the attached 'pe' worker, find the single section of "
-                "'test/sql/data/hello.exe' with the highest per-section entropy. Return exactly "
-                "two columns named `name` and `entropy` for that one section."
+                "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello.exe' "
+                "have more than 10 sections? Return a boolean."
             ),
-            "reference_sql": (
-                "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 1"
-            ),
+            "reference_sql": "SELECT pe.main.section_count('test/sql/data/hello.exe') > 10",
+            "ignore_column_names": True,
         },
+        # --- entropy (threshold predicate) ---
         {
-            "name": "count-imports",
+            "name": "entropy-in-range",
             "prompt": (
-                "Using the attached 'pe' worker, return the single count of imported symbols in "
-                "the binary at path 'test/sql/data/hello.exe'."
+                "Using the attached 'pe' worker, is the whole-file Shannon entropy (bits per byte) "
+                "of the file at path 'test/sql/data/hello.exe' between 4 and 7 inclusive? Return a "
+                "boolean."
             ),
-            "reference_sql": "SELECT count(*) AS n FROM pe.main.imports('test/sql/data/hello.exe')",
+            "reference_sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe') BETWEEN 4 AND 7",
+            "ignore_column_names": True,
+        },
+        # --- signing / provenance ---
+        {
+            "name": "macho-is-signed",
+            "prompt": (
+                "Using the attached 'pe' worker, is the file at path 'test/sql/data/hello_macho' "
+                "code-signed (does it carry an embedded code signature)? Return the boolean."
+            ),
+            "reference_sql": "SELECT pe.main.is_signed('test/sql/data/hello_macho')",
             "ignore_column_names": True,
         },
         {
-            "name": "count-long-strings",
+            "name": "build-year",
             "prompt": (
-                "Using the attached 'pe' worker, return the single count of printable strings of "
-                "length 8 or more in the file at path 'test/sql/data/hello.exe'."
+                "Using the attached 'pe' worker, was the PE at path 'test/sql/data/hello.exe' "
+                "built in the year 2023 according to its build timestamp? Return a boolean."
             ),
-            "reference_sql": ("SELECT count(*) AS n FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)"),
+            "reference_sql": "SELECT year(pe.main.compile_timestamp('test/sql/data/hello.exe')) = 2023",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "import-hash",
+            "prompt": (
+                "Using the attached 'pe' worker, return the PE import hash (imphash) of the file "
+                "at path 'test/sql/data/hello.exe'."
+            ),
+            "reference_sql": "SELECT pe.main.imphash('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        # --- set-returning tables (threshold predicates; literal args only) ---
+        {
+            "name": "top-section-entropy",
+            "prompt": (
+                "Using the attached 'pe' worker, across the sections of 'test/sql/data/hello.exe', "
+                "is the highest per-section entropy greater than 5.0? Return a boolean."
+            ),
+            "reference_sql": "SELECT max(entropy) > 5.0 FROM pe.main.sections('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "has-many-imports",
+            "prompt": (
+                "Using the attached 'pe' worker, does the binary at path 'test/sql/data/hello.exe' "
+                "import more than 10 symbols? Return a boolean."
+            ),
+            "reference_sql": "SELECT count(*) > 10 FROM pe.main.imports('test/sql/data/hello.exe')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "macho-has-exports",
+            "prompt": (
+                "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello_macho' "
+                "export at least one symbol? Return a boolean."
+            ),
+            "reference_sql": "SELECT count(*) >= 1 FROM pe.main.exports('test/sql/data/hello_macho')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "many-long-strings",
+            "prompt": (
+                "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello.exe' "
+                "contain more than 100 printable strings of length 8 or more? Return a boolean."
+            ),
+            "reference_sql": ("SELECT count(*) > 100 FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)"),
+            "ignore_column_names": True,
+        },
+        # --- discovery table ---
+        {
+            "name": "catalog-scalar-count",
+            "prompt": (
+                "Using the attached 'pe' worker's analysis catalog, are more than 5 analyses "
+                "listed as scalar functions? Return a boolean."
+            ),
+            "reference_sql": "SELECT count(*) > 5 FROM pe.main.analyses WHERE kind = 'scalar'",
             "ignore_column_names": True,
         },
     ]
 )
+
+# VGI146: a browsable, argument-free discovery table so an agent can see what the
+# worker offers before it owns a binary. Backed by the parameterless
+# `AnalysesFunction` (a curated in-memory registry — no file, no network), so
+# `SELECT ... FROM pe.main.analyses` scans credential-free. The object-level docs,
+# example queries, and result schema live on the function's Meta.tags; the table
+# adds its natural primary key and column comments.
+_DISCOVERY_TABLES: list[Table] = [
+    Table(
+        name="analyses",
+        function=AnalysesFunction,
+        comment="Browsable registry of every analysis (scalar/table) this worker exposes (discovery table).",
+        primary_key=(("name",),),
+        not_null=("name", "kind", "category", "formats", "result"),
+        column_comments={
+            "name": "Function name to call (e.g. `imphash`, `sections`).",
+            "kind": "`scalar` (one value per binary) or `table` (many rows per binary).",
+            "category": "Navigation category slug (format/structure/entropy/signing/symbols/strings).",
+            "formats": "Which container formats (PE / ELF / Mach-O) the analysis applies to.",
+            "result": "What the analysis returns.",
+        },
+        tags=AnalysesFunction.Meta.tags,
+    ),
+]
 
 _PE_CATALOG = Catalog(
     name="pe",
@@ -287,6 +392,7 @@ _PE_CATALOG = Catalog(
                 "topic": "malware-triage",
             },
             functions=list(_FUNCTIONS),
+            tables=list(_DISCOVERY_TABLES),
         ),
     ],
 )

@@ -54,9 +54,10 @@ _PE_FIXTURE = "test/sql/data/hello.exe"
 _MACHO_FIXTURE = "test/sql/data/hello_macho"
 
 
-# DuckDB cannot expose a table function's output schema for discovery, so each
-# table function carries a ``vgi.result_columns_md`` tag: a Markdown table of the
-# rows it returns. These mirror the ``pa.schema([...])`` definitions below.
+# Human-facing Markdown column tables, embedded in each table function's
+# ``vgi.doc_md`` narrative (### Returns). The machine-readable, linted result
+# schema is the ``vgi.result_columns_schema`` JSON below (VGI307); these mirror
+# it for the rendered docs.
 _SECTIONS_COLUMNS_MD = (
     "| column | type | description |\n"
     "|---|---|---|\n"
@@ -85,6 +86,57 @@ _STRINGS_COLUMNS_MD = (
     "| `value` | VARCHAR | Printable ASCII/UTF-16 string (length >= `min_len`). |"
 )
 
+# VGI307/VGI414: DuckDB cannot expose a table function's output schema for
+# discovery, so each table function declares it in the structured
+# ``vgi.result_columns_schema`` tag -- a JSON array of {name, type, description}
+# (validated by VGI321/322/323 and checked against what the function actually
+# returns under --execute by VGI910). These mirror the ``pa.schema([...])``
+# definitions below; ``type`` is the DuckDB type each Arrow column maps to. This
+# replaces the retired free-form ``vgi.result_columns_md`` (VGI414).
+_SECTIONS_COLUMNS_SCHEMA = json.dumps(
+    [
+        {"name": "name", "type": "VARCHAR", "description": "Section name (e.g. `.text`, `.data`, `__TEXT`)."},
+        {"name": "virtual_size", "type": "BIGINT", "description": "Size in bytes when mapped into memory."},
+        {"name": "raw_size", "type": "BIGINT", "description": "Size in bytes on disk."},
+        {
+            "name": "entropy",
+            "type": "DOUBLE",
+            "description": "Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption.",
+        },
+        {
+            "name": "characteristics",
+            "type": "VARCHAR",
+            "description": "Comma-joined section flags (PE only; empty for ELF/Mach-O).",
+        },
+    ]
+)
+_IMPORTS_COLUMNS_SCHEMA = json.dumps(
+    [
+        {"name": "library", "type": "VARCHAR", "description": "Imported library/DLL name (empty for ELF/Mach-O)."},
+        {
+            "name": "function",
+            "type": "VARCHAR",
+            "description": "Imported symbol name, or `ordinal#N` when imported by ordinal.",
+        },
+    ]
+)
+_EXPORTS_COLUMNS_SCHEMA = json.dumps(
+    [
+        {"name": "name", "type": "VARCHAR", "description": "Exported symbol name."},
+        {"name": "address", "type": "UBIGINT", "description": "Symbol address/value (0 when unavailable)."},
+    ]
+)
+_STRINGS_COLUMNS_SCHEMA = json.dumps(
+    [
+        {"name": "seq", "type": "BIGINT", "description": "1-based ordinal of the string in file order."},
+        {
+            "name": "value",
+            "type": "VARCHAR",
+            "description": "Printable ASCII/UTF-16 string (length >= `min_len`).",
+        },
+    ]
+)
+
 # Optional minimum string length for ``strings``. Explicit ``arrow_type`` so a
 # supplied INTEGER binds correctly (without it the default makes the SDK infer a
 # NULL Arrow type).
@@ -98,8 +150,8 @@ _MIN_LEN = Arg[int | None](
 
 # ---------------------------------------------------------------------------
 # Per-object discovery/description tags (VGI112/113/124/126/128) plus the
-# Markdown column docs (vgi.result_columns_md) and, for `sections`, a set of
-# guaranteed-runnable executable examples (VGI509).
+# structured result schema (vgi.result_columns_schema) and, for `sections`, a set
+# of guaranteed-runnable executable examples (VGI509).
 # ---------------------------------------------------------------------------
 
 # Catalog-qualified, self-contained, guaranteed-runnable examples (VGI509). Each
@@ -160,7 +212,7 @@ _SECTIONS_TAGS = {
         category="structure",
         relative_path="vgi_pe/tables.py",
     ),
-    "vgi.result_columns_md": _SECTIONS_COLUMNS_MD,
+    "vgi.result_columns_schema": _SECTIONS_COLUMNS_SCHEMA,
     "vgi.executable_examples": _SECTIONS_EXECUTABLE_EXAMPLES,
 }
 
@@ -192,7 +244,7 @@ _IMPORTS_TAGS = {
         category="symbols",
         relative_path="vgi_pe/tables.py",
     ),
-    "vgi.result_columns_md": _IMPORTS_COLUMNS_MD,
+    "vgi.result_columns_schema": _IMPORTS_COLUMNS_SCHEMA,
 }
 
 _EXPORTS_TAGS = {
@@ -221,7 +273,7 @@ _EXPORTS_TAGS = {
         category="symbols",
         relative_path="vgi_pe/tables.py",
     ),
-    "vgi.result_columns_md": _EXPORTS_COLUMNS_MD,
+    "vgi.result_columns_schema": _EXPORTS_COLUMNS_SCHEMA,
 }
 
 _STRINGS_TAGS = {
@@ -254,7 +306,7 @@ _STRINGS_TAGS = {
         category="strings",
         relative_path="vgi_pe/tables.py",
     ),
-    "vgi.result_columns_md": _STRINGS_COLUMNS_MD,
+    "vgi.result_columns_schema": _STRINGS_COLUMNS_SCHEMA,
 }
 
 
@@ -321,8 +373,11 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
         tags = _SECTIONS_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT * FROM pe.sections('{_PE_FIXTURE}') ORDER BY name",
-                description="Sections of a binary file with entropy",
+                sql=(
+                    f"SELECT name, virtual_size, raw_size, entropy "
+                    f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
+                ),
+                description="Top sections by entropy (a packing signal)",
             ),
         ]
 
@@ -429,7 +484,10 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
         tags = _IMPORTS_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT * FROM pe.imports('{_PE_FIXTURE}') ORDER BY library, function",
+                sql=(
+                    f"SELECT library, function FROM pe.main.imports('{_PE_FIXTURE}') "
+                    f"ORDER BY library, function LIMIT 10"
+                ),
                 description="Imported symbols of a binary file",
             ),
         ]
@@ -534,8 +592,8 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
         tags = _EXPORTS_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT * FROM pe.exports('{_MACHO_FIXTURE}') ORDER BY name",
-                description="Exported symbols of a binary file",
+                sql=f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
+                description="Exported symbols of a shared binary",
             ),
         ]
 
@@ -641,12 +699,12 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
         tags = _STRINGS_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT * FROM pe.strings('{_PE_FIXTURE}') ORDER BY seq",
+                sql=f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}') ORDER BY seq LIMIT 10",
                 description="Printable strings of a binary file",
             ),
             FunctionExample(
-                sql=f"SELECT * FROM pe.strings('{_PE_FIXTURE}', min_len := 8) ORDER BY seq",
-                description="Only strings at least 8 chars long",
+                sql=(f"SELECT count(*) AS long_strings FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8)"),
+                description="How many strings are at least 8 chars long",
             ),
         ]
 
@@ -679,9 +737,20 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
         description = "Printable ASCII/UTF-16 strings (seq, value) of a binary (BLOB bytes)"
         categories = ["pe", "strings"]
         tags = _STRINGS_TAGS
-        # See SectionsBytesFunction: the VARCHAR-path overload of this same
-        # `pe.main.strings` object carries the runnable examples; a table function
-        # only accepts literal args so a BLOB example can't reference a file.
+        # Unlike sections/imports/exports (which need a fully parseable executable),
+        # `strings` scans raw bytes, so the BLOB overload takes a self-contained,
+        # runnable literal example -- feed it a BLOB directly (e.g. bytes already
+        # sitting in a column) and it extracts the printable runs.
+        examples = [
+            FunctionExample(
+                sql=(
+                    "SELECT seq, value FROM pe.main.strings("
+                    "'demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) "
+                    "ORDER BY seq"
+                ),
+                description="Extract printable strings from raw BLOB bytes (no file needed)",
+            ),
+        ]
 
     @classmethod
     def cardinality(cls, params: BindParams[_StringsBytesArgs]) -> TableCardinality:
@@ -696,6 +765,184 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
             out.finish()
             return
         _emit_strings(src, params.args.min_len, out, params.output_schema)
+
+
+# ---------------------------------------------------------------------------
+# analyses -- a browsable, credential-free registry of every analysis the worker
+# exposes (VGI146: a worker with only argument-taking table functions needs one
+# browsable table/view so an agent can discover what it can do WITHOUT first
+# owning a binary). The rows are a curated, version-controlled catalog of the
+# functions in this worker; scanning it touches no filesystem and no network, so
+# it also answers the VGI911 scan-probe for free. Exposed as a regular `Table`
+# (see pe_worker.py) backed by this parameterless generator, so consumers write
+# `SELECT ... FROM pe.main.analyses` without parentheses.
+# ---------------------------------------------------------------------------
+
+# (name, kind, category, formats, result) for every analysis this worker exposes.
+# Kept in lockstep with the scalar/table functions above by hand -- there are a
+# dozen, they change rarely, and an explicit list is the clearest documentation.
+_ANALYSIS_CATALOG: list[tuple[str, str, str, str, str]] = [
+    ("binary_format", "scalar", "format", "PE, ELF, Mach-O", "Container format string: PE / ELF / MachO."),
+    ("machine", "scalar", "format", "PE, ELF, Mach-O", "Target CPU architecture, e.g. X86_64 or ARM64."),
+    ("entry_point", "scalar", "structure", "PE, ELF, Mach-O", "Entry-point virtual address (UBIGINT)."),
+    ("section_count", "scalar", "structure", "PE, ELF, Mach-O", "Number of sections in the image (INTEGER)."),
+    ("overall_entropy", "scalar", "entropy", "PE, ELF, Mach-O", "Whole-file Shannon entropy, 0-8 (DOUBLE)."),
+    ("is_signed", "scalar", "signing", "PE, Mach-O", "Whether an embedded code signature is present (BOOLEAN)."),
+    ("compile_timestamp", "scalar", "signing", "PE only", "PE build TimeDateStamp (TIMESTAMP)."),
+    ("imphash", "scalar", "signing", "PE only", "PE import hash for clustering (VARCHAR)."),
+    ("sections", "table", "structure", "PE, ELF, Mach-O", "Per-section name, sizes, entropy, and flags."),
+    ("imports", "table", "symbols", "PE, ELF, Mach-O", "Imported (library, function) symbols."),
+    ("exports", "table", "symbols", "PE, ELF, Mach-O", "Exported (name, address) symbols."),
+    ("strings", "table", "strings", "PE, ELF, Mach-O", "Printable ASCII/UTF-16 strings (seq, value)."),
+]
+
+_ANALYSES_SCHEMA = pa.schema(
+    [
+        field("name", pa.string(), "Function name to call (e.g. `imphash`, `sections`).", nullable=False),
+        field(
+            "kind", pa.string(), "`scalar` (one value per binary) or `table` (many rows per binary).", nullable=False
+        ),
+        field(
+            "category",
+            pa.string(),
+            "Navigation category slug (format/structure/entropy/signing/symbols/strings).",
+            nullable=False,
+        ),  # noqa: E501
+        field("formats", pa.string(), "Which container formats the analysis applies to.", nullable=False),
+        field("result", pa.string(), "What the analysis returns.", nullable=False),
+    ]
+)
+
+_ANALYSES_COLUMNS_SCHEMA = json.dumps(
+    [
+        {"name": "name", "type": "VARCHAR", "description": "Function name to call (e.g. `imphash`, `sections`)."},
+        {
+            "name": "kind",
+            "type": "VARCHAR",
+            "description": "`scalar` (one value per binary) or `table` (many rows per binary).",
+        },
+        {
+            "name": "category",
+            "type": "VARCHAR",
+            "description": "Navigation category slug (format/structure/entropy/signing/symbols/strings).",
+        },
+        {"name": "formats", "type": "VARCHAR", "description": "Which container formats the analysis applies to."},
+        {"name": "result", "type": "VARCHAR", "description": "What the analysis returns."},
+    ]
+)
+
+
+@dataclass(kw_only=True)
+class _NoArgs:
+    """A discovery table function that takes no arguments."""
+
+
+_ANALYSES_DOC_LLM = (
+    "Browse the worker's own **analysis catalog** — one row per function this worker exposes, so "
+    "you can discover its capabilities without supplying a binary first. Columns: `name` (the "
+    "function to call), `kind` (`scalar` for one value per binary, `table` for many rows per "
+    "binary), `category` (its navigation slug), `formats` (which of PE / ELF / Mach-O it applies "
+    "to), and `result` (what it returns). This is a static registry: scanning it reads no file "
+    "and touches no network.\n\n"
+    "Use it as the entry point for planning: filter by `kind` to find scalars that fold into a "
+    "projection, by `formats` to see what is PE-only (e.g. `imphash`, `compile_timestamp`), or by "
+    "`category` to enumerate a family (e.g. all `signing` analyses). Then call the named function "
+    "on an actual binary path or BLOB."
+)
+_ANALYSES_DOC_MD = (
+    "## analyses\n\n"
+    "A browsable registry of every analysis this worker exposes — read it directly, without "
+    "parentheses, to discover what the `pe` catalog can do before you have a binary in hand.\n\n"
+    "### Columns\n\n"
+    "| column | type | description |\n"
+    "|---|---|---|\n"
+    "| `name` | VARCHAR | Function name to call (e.g. `imphash`, `sections`). |\n"
+    "| `kind` | VARCHAR | `scalar` (one value per binary) or `table` (many rows per binary). |\n"
+    "| `category` | VARCHAR | Navigation category slug. |\n"
+    "| `formats` | VARCHAR | Which of PE / ELF / Mach-O the analysis applies to. |\n"
+    "| `result` | VARCHAR | What the analysis returns. |\n\n"
+    "Static, credential-free registry: scanning it reads no file and touches no network. Filter "
+    "by `kind`, `formats`, or `category` to plan a triage query, then call the named function on a "
+    "real binary."
+)
+
+_ANALYSES_TAGS = {
+    **meta.object_tags(
+        title="Analysis Catalog",
+        doc_llm=_ANALYSES_DOC_LLM,
+        doc_md=_ANALYSES_DOC_MD,
+        keywords="analyses, catalog, registry, discovery, capabilities, functions, browse, metadata",
+        category="discovery",
+        relative_path="vgi_pe/tables.py",
+    ),
+    "vgi.result_columns_schema": _ANALYSES_COLUMNS_SCHEMA,
+    # VGI123: classifying tags use BARE keys (not vgi.-namespaced), mirroring the
+    # schema-level classification so the discovery table is filed consistently.
+    "domain": "security",
+    "topic": "malware-triage",
+    "vgi.example_queries": json.dumps(
+        [
+            {
+                "description": "List the scalar analyses (one value per binary) in category order.",
+                "sql": (
+                    "SELECT name, category, result FROM pe.main.analyses WHERE kind = 'scalar' ORDER BY category, name"
+                ),
+            },
+            {
+                "description": "Which analyses are PE-only?",
+                "sql": "SELECT name FROM pe.main.analyses WHERE formats = 'PE only' ORDER BY name",
+            },
+            {
+                "description": "Count analyses by kind.",
+                "sql": "SELECT kind, count(*) AS n FROM pe.main.analyses GROUP BY kind ORDER BY kind",
+            },
+        ]
+    ),
+}
+
+
+@init_single_worker
+@bind_fixed_schema
+class AnalysesFunction(TableFunctionGenerator[_NoArgs]):
+    """Browsable catalog of every analysis this worker exposes (no arguments)."""
+
+    FIXED_SCHEMA: ClassVar[pa.Schema] = _ANALYSES_SCHEMA
+
+    class Meta:
+        """SDK function metadata (name, description, examples)."""
+
+        name = "analyses"
+        description = "Browsable registry of every analysis (scalar/table) this worker exposes"
+        categories = ["pe", "discovery"]
+        tags = _ANALYSES_TAGS
+        examples = [
+            FunctionExample(
+                sql="SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name",
+                description="Browse every analysis the worker exposes",
+            ),
+        ]
+
+    @classmethod
+    def cardinality(cls, params: BindParams[_NoArgs]) -> TableCardinality:
+        """Estimate the number of output rows for the optimizer."""
+        return TableCardinality(estimate=len(_ANALYSIS_CATALOG), max=len(_ANALYSIS_CATALOG))
+
+    @classmethod
+    def process(cls, params: ProcessParams[_NoArgs], state: None, out: OutputCollector) -> None:
+        """Emit the curated analysis-catalog rows."""
+        out.emit(
+            pa.RecordBatch.from_pydict(
+                {
+                    "name": [r[0] for r in _ANALYSIS_CATALOG],
+                    "kind": [r[1] for r in _ANALYSIS_CATALOG],
+                    "category": [r[2] for r in _ANALYSIS_CATALOG],
+                    "formats": [r[3] for r in _ANALYSIS_CATALOG],
+                    "result": [r[4] for r in _ANALYSIS_CATALOG],
+                },
+                schema=params.output_schema,
+            )
+        )
+        out.finish()
 
 
 TABLE_FUNCTIONS: list[type] = [
