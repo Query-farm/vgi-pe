@@ -191,7 +191,7 @@ _SECTIONS_TAGS = {
             "Enumerate the **sections** of a binary, one row per section, with size and "
             "**per-section Shannon entropy** — the workhorse table for layout-level triage. "
             "Columns: `name`, `virtual_size`, `raw_size`, `entropy` (0–8), `characteristics` "
-            "(PE flags; empty for ELF/Mach-O). Accepts a VARCHAR path or a BLOB; unparseable or "
+            "(PE flags; empty for ELF/Mach-O). Accepts a `VARCHAR` path or a `BLOB`; unparseable or "
             "non-binary input yields **no rows** (never an error).\n\n"
             "Use it to find *where* in a file suspicious data lives: a high-entropy (`> ~7`) "
             "`.text`/code section, an executable+writable section, or a section whose raw size "
@@ -211,6 +211,15 @@ _SECTIONS_TAGS = {
         keywords="sections, segments, layout, entropy, packing, .text, .data, characteristics, flags, structure",
         category="structure",
         relative_path="vgi_pe/tables.py",
+        examples=[
+            {
+                "description": "Top sections by entropy (a packing signal)",
+                "sql": (
+                    f"SELECT name, virtual_size, raw_size, entropy "
+                    f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
+                ),
+            },
+        ],
     ),
     "vgi.result_columns_schema": _SECTIONS_COLUMNS_SCHEMA,
     "vgi.executable_examples": _SECTIONS_EXECUTABLE_EXAMPLES,
@@ -223,7 +232,7 @@ _IMPORTS_TAGS = {
             "Enumerate the **imported symbols** of a binary, one row per import, as "
             "`(library, function)`. For PE the `library` is the DLL (e.g. `KERNEL32.dll`) and "
             "`function` the imported API, or `ordinal#N` when imported by ordinal; for ELF/Mach-O "
-            "`library` is empty and `function` is the symbol. Accepts a VARCHAR path or a BLOB; "
+            "`library` is empty and `function` is the symbol. Accepts a `VARCHAR` path or a `BLOB`; "
             "unparseable input yields no rows.\n\n"
             "The import table is one of the richest behavioral fingerprints of a binary: which "
             "APIs it pulls in (networking, crypto, process injection, registry, file I/O) sketches "
@@ -243,6 +252,15 @@ _IMPORTS_TAGS = {
         keywords="imports, imported symbols, IAT, DLL, API, dependencies, dynamic symbols, capabilities, behavior",
         category="symbols",
         relative_path="vgi_pe/tables.py",
+        examples=[
+            {
+                "description": "Imported symbols of a binary file",
+                "sql": (
+                    f"SELECT library, function FROM pe.main.imports('{_PE_FIXTURE}') "
+                    f"ORDER BY library, function LIMIT 10"
+                ),
+            },
+        ],
     ),
     "vgi.result_columns_schema": _IMPORTS_COLUMNS_SCHEMA,
 }
@@ -254,7 +272,7 @@ _EXPORTS_TAGS = {
             "Enumerate the **exported symbols** of a binary, one row per export, as "
             "`(name, address)` where `address` is the symbol's address/value (0 when "
             "unavailable). Exports are typical of shared libraries (DLLs, `.so`, `.dylib`) and "
-            "plugin-style modules. Accepts a VARCHAR path or a BLOB; unparseable input or a binary "
+            "plugin-style modules. Accepts a `VARCHAR` path or a `BLOB`; unparseable input or a binary "
             "with no exports yields no rows.\n\n"
             "Use it to understand a module's public API surface, to spot a DLL whose exports "
             "mimic a legitimate system library (a side-loading / proxying tactic), or to match "
@@ -272,6 +290,12 @@ _EXPORTS_TAGS = {
         keywords="exports, exported symbols, EAT, DLL, shared library, dylib, so, public API, side-loading",
         category="symbols",
         relative_path="vgi_pe/tables.py",
+        examples=[
+            {
+                "description": "Exported symbols of a shared binary",
+                "sql": f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
+            },
+        ],
     ),
     "vgi.result_columns_schema": _EXPORTS_COLUMNS_SCHEMA,
 }
@@ -283,7 +307,7 @@ _STRINGS_TAGS = {
             "Extract **printable strings** from a binary, one row per string, as `(seq, value)` "
             "in file order. It recovers both ASCII and UTF-16LE runs at least `min_len` "
             "characters long (`min_len` defaults to 5 and is passed as the named argument "
-            "`min_len :=`). Accepts a VARCHAR path or a BLOB; output is capped for safety against "
+            "`min_len :=`). Accepts a `VARCHAR` path or a `BLOB`; output is capped for safety against "
             "string-bomb input, and unparseable input yields no rows.\n\n"
             "Strings are the fastest way to surface human-readable indicators inside an opaque "
             "binary: URLs, IP addresses, file paths, registry keys, command lines, mutex names, "
@@ -295,7 +319,7 @@ _STRINGS_TAGS = {
             "## strings\n\n"
             "One row per printable string (ASCII + UTF-16LE) of length `>= min_len`.\n\n"
             "### Arguments\n\n"
-            "- `binary` — a VARCHAR path or a BLOB.\n"
+            "- `binary` — a `VARCHAR` path or a `BLOB`.\n"
             "- `min_len` (named, default 5) — minimum string length to report.\n\n"
             "### Returns\n\n" + _STRINGS_COLUMNS_MD + "\n\n### Notes\n\n"
             "Output is bounded against string-bomb inputs. Use `WHERE value LIKE '%http%'` (and "
@@ -305,6 +329,24 @@ _STRINGS_TAGS = {
         keywords="strings, printable, ascii, utf-16, IOC, indicators, URLs, paths, extract, grep, hunting",
         category="strings",
         relative_path="vgi_pe/tables.py",
+        examples=[
+            {
+                "description": "Printable strings of a binary file",
+                "sql": f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}') ORDER BY seq LIMIT 10",
+            },
+            {
+                "description": "How many strings are at least 8 chars long",
+                "sql": f"SELECT count(*) AS long_strings FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8)",
+            },
+            {
+                "description": "Extract printable strings from raw BLOB bytes (no file needed)",
+                "sql": (
+                    "SELECT seq, value FROM pe.main.strings("
+                    "'demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) "
+                    "ORDER BY seq"
+                ),
+            },
+        ],
     ),
     "vgi.result_columns_schema": _STRINGS_COLUMNS_SCHEMA,
 }
@@ -847,7 +889,7 @@ _ANALYSES_DOC_LLM = (
     "Use it as the entry point for planning: filter by `kind` to find scalars that fold into a "
     "projection, by `formats` to see what is PE-only (e.g. `imphash`, `compile_timestamp`), or by "
     "`category` to enumerate a family (e.g. all `signing` analyses). Then call the named function "
-    "on an actual binary path or BLOB."
+    "on an actual binary path or `BLOB`."
 )
 _ANALYSES_DOC_MD = (
     "## analyses\n\n"

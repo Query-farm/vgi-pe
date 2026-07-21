@@ -87,7 +87,7 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
     doc_llm=(
         "Detect the **container format** of an executable image and return it as a short string: "
         "`PE` (Windows portable executable), `ELF` (Linux/Unix), or `MachO` (macOS). Pass the "
-        "binary as either a VARCHAR filesystem path the worker opens or a BLOB of raw bytes. "
+        "binary as either a `VARCHAR` filesystem path the worker opens or a `BLOB` of raw bytes. "
         "Returns `NULL` when the input is NULL, empty, truncated, or not a recognizable "
         "executable, so it is safe to run across a mixed corpus.\n\n"
         "Use this first when triaging an unknown sample: the format decides which downstream "
@@ -97,7 +97,7 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
     doc_md=(
         "## binary_format\n\n"
         "Returns the executable container format of a binary as `PE`, `ELF`, or `MachO`.\n\n"
-        "Call it with a single argument — a VARCHAR filesystem path the worker opens, or a BLOB "
+        "Call it with a single argument — a `VARCHAR` filesystem path the worker opens, or a `BLOB` "
         "of raw bytes — and it returns the container-format string (for example `PE` for a "
         "Windows executable). Returns `NULL` for NULL, empty, or unrecognizable input — never an "
         "error. Typically the first step in a triage pipeline because the format gates which other "
@@ -106,6 +106,13 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
     keywords="format, file type, magic, PE, ELF, Mach-O, MachO, executable, container, detect, identify, binary type",
     category="format",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {
+            "description": "Detect the executable format of a file",
+            "sql": f"SELECT pe.main.binary_format('{_PE_FIXTURE}')",
+        },
+        {"description": "Detect the executable format of bytes", "sql": f"SELECT pe.main.binary_format({_PE_BLOB})"},
+    ],
 )
 
 
@@ -191,6 +198,10 @@ _IS_SIGNED_TAGS = meta.object_tags(
     keywords="signed, signature, code signing, authenticode, codesign, trust, certificate, PE, Mach-O, security",
     category="signing",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Whether a binary file is code-signed", "sql": f"SELECT pe.main.is_signed('{_PE_FIXTURE}')"},
+        {"description": "Whether binary bytes are code-signed", "sql": f"SELECT pe.main.is_signed({_PE_BLOB})"},
+    ],
 )
 
 
@@ -273,6 +284,10 @@ _ENTRY_POINT_TAGS = meta.object_tags(
     keywords="entry point, entrypoint, AddressOfEntryPoint, start address, OEP, virtual address, structure",
     category="structure",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Entry-point address of a binary file", "sql": f"SELECT pe.main.entry_point('{_PE_FIXTURE}')"},
+        {"description": "Entry-point address of binary bytes", "sql": f"SELECT pe.main.entry_point({_PE_BLOB})"},
+    ],
 )
 
 
@@ -355,6 +370,10 @@ _MACHINE_TAGS = meta.object_tags(
     keywords="machine, architecture, arch, cpu, x86, x86_64, amd64, i386, arm, arm64, aarch64, ISA, structure",
     category="format",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Architecture of a binary file", "sql": f"SELECT pe.main.machine('{_PE_FIXTURE}')"},
+        {"description": "Architecture of binary bytes", "sql": f"SELECT pe.main.machine({_PE_BLOB})"},
+    ],
 )
 
 
@@ -454,6 +473,16 @@ _COMPILE_TIMESTAMP_TAGS = meta.object_tags(
     keywords="compile timestamp, build time, TimeDateStamp, PE header, provenance, timeline, metadata, epoch",
     category="signing",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {
+            "description": "PE compile timestamp of a binary file",
+            "sql": f"SELECT pe.main.compile_timestamp('{_PE_FIXTURE}')",
+        },
+        {
+            "description": "PE compile timestamp of binary bytes",
+            "sql": f"SELECT pe.main.compile_timestamp({_PE_BLOB})",
+        },
+    ],
 )
 
 
@@ -536,6 +565,10 @@ _SECTION_COUNT_TAGS = meta.object_tags(
     keywords="section count, sections, number of sections, segments, layout, structure, count",
     category="structure",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Section count of a binary file", "sql": f"SELECT pe.main.section_count('{_PE_FIXTURE}')"},
+        {"description": "Section count of binary bytes", "sql": f"SELECT pe.main.section_count({_PE_BLOB})"},
+    ],
 )
 
 
@@ -621,6 +654,10 @@ _OVERALL_ENTROPY_TAGS = meta.object_tags(
     keywords="entropy, shannon, packing, packed, compressed, encrypted, obfuscation, randomness, triage",
     category="entropy",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Overall entropy of a binary file", "sql": f"SELECT pe.main.overall_entropy('{_PE_FIXTURE}')"},
+        {"description": "Overall entropy of binary bytes", "sql": f"SELECT pe.main.overall_entropy({_PE_BLOB})"},
+    ],
 )
 
 
@@ -695,7 +732,7 @@ _IMPHASH_TAGS = meta.object_tags(
     doc_md=(
         "## imphash\n\n"
         "The PE import hash — MD5 of the normalized import table — as a hex string (PE only).\n\n"
-        "Call it with one argument (a VARCHAR path or a BLOB) to get the sample's 32-character "
+        "Call it with one argument (a `VARCHAR` path or a `BLOB`) to get the sample's 32-character "
         "hex import hash, or `NULL` for ELF, Mach-O, and unparseable input. Because two PEs built "
         "from the same toolchain and import table share an imphash, it is a classic clustering / "
         "family-attribution key: group a corpus by this value to bucket related samples. Packing "
@@ -705,6 +742,10 @@ _IMPHASH_TAGS = meta.object_tags(
     keywords="imphash, import hash, pehash, clustering, family, attribution, malware, fingerprint, MD5, imports",
     category="signing",
     relative_path="vgi_pe/scalars.py",
+    examples=[
+        {"description": "Import hash of a PE file", "sql": f"SELECT pe.main.imphash('{_PE_FIXTURE}')"},
+        {"description": "Import hash of PE bytes", "sql": f"SELECT pe.main.imphash({_PE_BLOB})"},
+    ],
 )
 
 

@@ -32,16 +32,11 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    # NOTE: capped below 0.15 on purpose. vgi-python 0.15.0 changed the table
-    # listing RPC schema (`required_field_filter_paths` -> the nested
-    # `required_filters`), which the currently-released signed `vgi` community
-    # extension cannot parse -- both the local `vgi-lint` run and CI (the
-    # `Query-farm/vgi-lint-check` action and the `INSTALL vgi FROM community`
-    # E2E) fail with an Arrow schema mismatch on `catalog_schema_contents_tables`
-    # as soon as the worker exposes a browsable table (see `main.analyses`). Lift
-    # the `<0.15` cap once the community extension ships support for the new
-    # tables RPC.
-    "vgi-python[http]>=0.14.0,<0.15",
+    # Requires vgi-python >=0.16.0: the table listing RPC schema moved from
+    # `required_field_filter_paths` to the nested `required_filters` (CNF). The
+    # current signed `vgi` community extension now REQUIRES this newer schema, so
+    # the previous `<0.15` cap has been lifted.
+    "vgi-python[http]>=0.16.0",
     "lief>=0.15",
     "pyarrow",
 ]
@@ -54,7 +49,7 @@ dependencies = [
 # explicit extra keeps the `--extra http` install knob the CI job uses.)
 http = [
     # Keep in lockstep with the main dependency's cap (see the note above).
-    "vgi-python[http]>=0.14.0,<0.15",
+    "vgi-python[http]>=0.16.0",
 ]
 dev = [
     "pytest>=8",
@@ -128,5 +123,8 @@ warn_return_any = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["lief.*"]
+# `lief` ships no type stubs; `pyarrow` (>=25) dropped its `py.typed` marker, so
+# mypy --strict cannot resolve either without a stub package. Treat both as
+# untyped third-party imports (they are used behind our own typed wrappers).
+module = ["lief.*", "pyarrow.*"]
 ignore_missing_imports = true

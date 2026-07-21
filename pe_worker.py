@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.14.0,<0.15",
+#     "vgi-python[http]>=0.16.0",
 #     "lief>=0.15",
 #     "pyarrow",
 # ]
@@ -63,7 +63,7 @@ _CATALOG_DESCRIPTION_LLM = (
     "functions: detect the format and architecture, read the entry point, code-signing status, PE "
     "build timestamp and import hash (imphash) for clustering, compute whole-file and per-section "
     "Shannon entropy to spot packing/encryption, and list sections, imported/exported symbols, and "
-    "printable strings. Each function takes a binary as either a VARCHAR filesystem path or a BLOB "
+    "printable strings. Each function takes a binary as either a `VARCHAR` filesystem path or a `BLOB` "
     "of raw bytes. The worker NEVER executes the binary and never resolves external references; "
     "malformed or hostile input degrades to NULL / no rows. Use for malware triage, build "
     "provenance, and binary-corpus analysis in SQL."
@@ -98,14 +98,14 @@ _CATALOG_DESCRIPTION_MD = (
     "imported and exported symbols, and its printable strings — for row-level IOC hunting, "
     "filtering, and joining. Every function accepts the binary as either a filesystem path it opens "
     "or raw bytes passed inline, so you can analyze files on disk or blobs already living in a "
-    "table, and each pairs its narrative with runnable, tested example queries. Discover the exact "
-    "set of functions by listing the schema. Static analysis only — the binary is never executed."
+    "table, and each pairs its narrative with runnable, tested example queries. "
+    "Static analysis only — the binary is never executed."
 )
 _SCHEMA_DESCRIPTION_LLM = (
     "Static binary-analysis functions over PE/ELF/Mach-O images: format and architecture detection, "
     "entry point, code-signing status, PE build timestamp and imphash, whole-file and per-section "
-    "entropy, and listings of sections, imports, exports, and printable strings. Input is a VARCHAR "
-    "path or a BLOB; the binary is never executed."
+    "entropy, and listings of sections, imports, exports, and printable strings. Input is a `VARCHAR` "
+    "path or a `BLOB`; the binary is never executed."
 )
 _SCHEMA_DESCRIPTION_MD = (
     "## main\n\n"
@@ -114,22 +114,50 @@ _SCHEMA_DESCRIPTION_MD = (
     "architecture detection, structural layout, entropy and packing signals, signing and build "
     "provenance, imported/exported symbols, and printable-string extraction. Per-binary scalar "
     "facts fold into projections and filters; set-returning functions expand a single sample into "
-    "rows for hunting and joining. List the schema to discover the exact functions and their "
-    "categories.\n\n"
-    "Every function accepts a VARCHAR path or a BLOB and degrades to NULL / no rows on hostile "
+    "rows for hunting and joining.\n\n"
+    "Every function accepts a `VARCHAR` path or a `BLOB` and degrades to NULL / no rows on hostile "
     "input. Static (read-only) — the binary is never executed."
 )
-# Representative, catalog-qualified example queries for the schema (VGI506). They
-# read committed fixtures by relative path so they run against an attached worker.
-_SCHEMA_EXAMPLE_QUERIES = (
-    "SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name;\n"
-    "SELECT pe.main.binary_format('test/sql/data/hello.exe');\n"
-    "SELECT pe.main.machine('test/sql/data/hello.exe');\n"
-    "SELECT pe.main.overall_entropy('test/sql/data/hello.exe');\n"
-    "SELECT pe.main.imphash('test/sql/data/hello.exe');\n"
-    "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC;\n"
-    "SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10;\n"
-    "SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10;"
+# Representative, catalog-qualified example queries for the schema (VGI506/VGI515).
+# A described-example JSON list (each carries a human-readable description; the
+# native duckdb_functions().examples carrier drops descriptions, so the strict
+# linter reads them from this tag). They read committed fixtures by relative path
+# so they run against an attached worker.
+_SCHEMA_EXAMPLE_QUERIES = json.dumps(
+    [
+        {
+            "description": "Browse the worker's analysis catalog before owning a binary.",
+            "sql": "SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name",
+        },
+        {
+            "description": "Detect the executable container format of a sample.",
+            "sql": "SELECT pe.main.binary_format('test/sql/data/hello.exe')",
+        },
+        {
+            "description": "Read the target CPU architecture of a sample.",
+            "sql": "SELECT pe.main.machine('test/sql/data/hello.exe')",
+        },
+        {
+            "description": "Compute whole-file entropy as a packing/encryption signal.",
+            "sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe')",
+        },
+        {
+            "description": "Fingerprint a PE by its import hash for clustering.",
+            "sql": "SELECT pe.main.imphash('test/sql/data/hello.exe')",
+        },
+        {
+            "description": "Rank a sample's sections by per-section entropy.",
+            "sql": "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC",
+        },
+        {
+            "description": "List the first imported symbols of a sample.",
+            "sql": "SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10",
+        },
+        {
+            "description": "Extract long printable strings for IOC hunting.",
+            "sql": "SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10",
+        },
+    ]
 )
 _CATALOG_KEYWORDS = (
     "pe, elf, mach-o, macho, binary analysis, malware triage, static analysis, reverse engineering, "

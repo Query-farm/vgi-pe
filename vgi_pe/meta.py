@@ -50,6 +50,7 @@ def object_tags(
     keywords: str,
     category: str,
     relative_path: str,
+    examples: list[dict[str, str]] | None = None,
 ) -> dict[str, str]:
     """Build the standard per-object discovery/description tags.
 
@@ -66,15 +67,24 @@ def object_tags(
         relative_path: Implementing source file relative to the repo root.
             Accepted for documentation/consistency but NOT emitted as a per-object
             ``vgi.source_url`` — VGI139 keeps that link on the catalog only.
+        examples: Optional list of ``{"description": ..., "sql": ...}`` dicts,
+            serialized as the ``vgi.example_queries`` tag (VGI515). DuckDB's native
+            ``duckdb_functions().examples`` carrier drops the human-readable
+            description, so the strict linter requires this described-example JSON
+            tag; for arity overloads sharing one ``Meta.name`` the examples are
+            aggregated here on the shared tag dict.
 
     Returns:
         A tag dict suitable for spreading into a function's ``Meta.tags``.
     """
     del relative_path  # source_url is catalog-only (VGI139); see module docstring.
-    return {
+    tags = {
         "vgi.title": title,
         "vgi.doc_llm": doc_llm,
         "vgi.doc_md": doc_md,
         "vgi.keywords": keywords_array(keywords),
         "vgi.category": category,
     }
+    if examples is not None:
+        tags["vgi.example_queries"] = json.dumps(examples, ensure_ascii=False)
+    return tags
