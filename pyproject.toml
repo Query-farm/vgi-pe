@@ -51,6 +51,12 @@ http = [
     # Keep in lockstep with the main dependency's cap (see the note above).
     "vgi-python[http]>=0.16.0",
 ]
+# HTTP-serving extra installed by the container image (`pip install '.[serve]'`).
+# Alias of `http`: pulls vgi-python's HTTP extra (waitress) so `vgi-serve
+# vgi_pe.worker:PeWorker --http` can run inside the slim image.
+serve = [
+    "vgi-python[http]>=0.16.0",
+]
 dev = [
     "pytest>=8",
     "ruff",
@@ -83,6 +89,15 @@ ignore = ["VGI305"]
 # name from the single-type check (columns are unaffected — no column is named
 # `binary`).
 type_consistency_ignore_names = ["binary"]
+
+# Console script — the stdio worker entry point, importable from the installed
+# wheel (points INTO the package, never at the repo-root shim, so it ships).
+[project.scripts]
+vgi-pe-worker = "vgi_pe.worker:main"
+
+[project.urls]
+Repository = "https://github.com/Query-farm/vgi-pe"
+Issues = "https://github.com/Query-farm/vgi-pe/issues"
 
 [build-system]
 requires = ["hatchling"]

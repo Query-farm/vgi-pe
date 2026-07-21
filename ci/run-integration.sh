@@ -36,6 +36,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
 STAGE="${STAGE:-$(mktemp -d)}"
 TRANSPORT="${TRANSPORT:-subprocess}"
+# Which staged files the runner executes (relative to $STAGE). Default: the whole
+# suite. The Docker image_test overrides it to smoke a single file over stdio.
+TEST_PATTERN="${TEST_PATTERN:-test/sql/*}"
 
 case "$TRANSPORT" in
   subprocess|http|unix) ;;
@@ -122,6 +125,19 @@ case "$TRANSPORT" in
       ' "$sf" > "$sf.tmp" && mv "$sf.tmp" "$sf"
     done
 
+    # If VGI_PE_WORKER is ALREADY an http(s):// URL, the worker is booted out of
+    # band by the caller (e.g. the Docker image_test runs the FULL suite against
+    # one warm container: `docker run -d -p 8000:8000 <image>`). Point ATTACH at
+    # that URL and skip booting a local worker. The container bakes the fixtures
+    # in at its own cwd (/app/test/sql/data), so the relative `test/sql/data/*`
+    # paths resolve worker-side. Only fall through to booting a local worker when
+    # no external HTTP URL was supplied.
+    if [ -n "${VGI_PE_WORKER:-}" ] && { [[ "$VGI_PE_WORKER" == http://* ]] || [[ "$VGI_PE_WORKER" == https://* ]]; }; then
+      echo "HTTP worker supplied out of band — VGI_PE_WORKER=$VGI_PE_WORKER (not booting a local worker)"
+      cd "$STAGE"
+      # (skip the local-boot block below; the shared runner section follows)
+    else
+
     # Boot the worker in HTTP mode on an auto-selected port, with cwd = $STAGE
     # so the relative `test/sql/data/*` fixture paths resolve. The worker writes
     # the chosen port to --port-file atomically, so we watch for the file rather
@@ -157,6 +173,7 @@ case "$TRANSPORT" in
     # LOCATION must be the bare scheme://host:port with NO path suffix.
     export VGI_PE_WORKER="http://127.0.0.1:$PORT"
     echo "HTTP worker ready on $VGI_PE_WORKER (pid $SERVER_PID)"
+    fi
     ;;
 
   unix)
@@ -219,10 +236,10 @@ rm -f "$STAGE/test/_warm.test"
 # transport would otherwise show "All tests were skipped" and the job would go
 # GREEN having run nothing — a fake pass. We detect that and fail explicitly. A
 # real run prints "All tests passed (N assertions ...)".
-echo "Running suite (transport: $TRANSPORT, worker: $VGI_PE_WORKER) ..."
+echo "Running suite (transport: $TRANSPORT, worker: $VGI_PE_WORKER, pattern: $TEST_PATTERN) ..."
 RUN_LOG="$STAGE/run.log"
 set +e
-"$HAYBARN_UNITTEST" "test/sql/*" 2>&1 | tee "$RUN_LOG"
+"$HAYBARN_UNITTEST" "$TEST_PATTERN" 2>&1 | tee "$RUN_LOG"
 RUN_RC="${PIPESTATUS[0]}"
 set -e
 

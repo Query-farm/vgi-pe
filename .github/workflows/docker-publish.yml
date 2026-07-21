@@ -1,0 +1,99 @@
+# Copyright 2026 Query Farm LLC - https://query.farm
+#
+# Build + publish the multi-arch vgi-pe image to ghcr.io. The heavy lifting
+# (multi-arch build -> /health smoke -> image SQL test -> push-by-digest -> manifest ->
+# cosign-sign) lives in the shared reusable workflow Query-farm/vgi-actions/docker-publish.yml;
+# this file gates on the repo's own CI and supplies the worker-specific inputs.
+#
+# Tag-driven: vX.Y.Z -> :X.Y.Z / :X.Y / :latest; push to main -> :edge.
+name: Publish image to ghcr.io
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gate every image on the full unit + vgi-extension integration suite, so a
+  # broken worker is never imaged.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [ci]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: Query-farm/vgi-actions/.github/workflows/docker-publish.yml@v1
+    secrets: inherit
+    with:
+      image_name: vgi-pe
+      smoke_import: "vgi_pe, lief, pyarrow"
+      health_port: "8000"
+      version_check_cmd: "ci/check-version.sh"
+      # Validate the built image's two transports against the signed vgi
+      # extension. The worker logic over every transport is already exercised on
+      # every run by the gating `ci` job (all test/sql/*, three transports, two
+      # OSes), so we don't re-run the whole matrix cold here:
+      #   - stdio: smoke ONE file (one cold container) to prove the stdio
+      #     entrypoint speaks the protocol in-image;
+      #   - HTTP: run the FULL suite against a SINGLE warm container (end-to-end
+      #     image check, no per-ATTACH startup). The container bakes the fixtures
+      #     in at /app/test/sql/data so the relative paths resolve worker-side.
+      # $CITEST_IMAGE is the loaded <image>:citest-amd64 ref; GH_TOKEN is provided
+      # for the haybarn download.
+      image_test: |
+        _t0=$(date +%s)
+        echo "::group::image + runner facts"
+        docker image inspect "$CITEST_IMAGE" --format 'image size: {{.Size}} bytes  arch: {{.Architecture}}' || true
+        echo "runner: $(nproc) cpus"; free -h 2>/dev/null || true
+        echo "::endgroup::"
+
+        echo "::group::download haybarn-unittest"
+        REL=$(gh release view --repo Query-farm-haybarn/haybarn --json tagName --jq .tagName)
+        gh release download "$REL" --repo Query-farm-haybarn/haybarn \
+          --pattern 'haybarn_unittest-linux-amd64.zip' --output hb.zip --clobber
+        mkdir -p hb && unzip -o -q hb.zip -d hb
+        export HAYBARN_UNITTEST="$PWD/$(find hb -name 'haybarn-unittest' -type f | head -1)"
+        chmod +x "$HAYBARN_UNITTEST"
+        echo "::endgroup::"
+        T_HB=$(date +%s)
+
+        echo "::group::stdio entrypoint smoke (one cold container, one file)"
+        TEST_PATTERN="test/sql/format.test" \
+          VGI_PE_WORKER="docker run -i --rm $CITEST_IMAGE stdio" \
+          ci/run-integration.sh
+        echo "::endgroup::"
+        T_STDIO=$(date +%s)
+
+        echo "::group::full SQL suite — HTTP transport (one warm container)"
+        CID=$(docker run -d -p 8000:8000 "$CITEST_IMAGE")
+        trap 'docker rm -f "$CID" >/dev/null 2>&1' EXIT
+        for _ in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:8000/health && break; sleep 1; done
+        T_READY=$(date +%s)
+        TRANSPORT=http VGI_PE_WORKER="http://localhost:8000" ci/run-integration.sh
+        echo "::endgroup::"
+        T_HTTP=$(date +%s)
+
+        # Per-phase breakdown -> job summary (and stdout) so slow phases are obvious.
+        {
+          echo "### Image test timing — $CITEST_IMAGE"
+          echo ""
+          echo "| phase | seconds |"
+          echo "| --- | ---: |"
+          echo "| download haybarn | $((T_HB - _t0)) |"
+          echo "| stdio entrypoint smoke (1 cold container) | $((T_STDIO - T_HB)) |"
+          echo "| http container ready | $((T_READY - T_STDIO)) |"
+          echo "| full suite over HTTP (1 warm container) | $((T_HTTP - T_READY)) |"
+          echo "| **total** | $((T_HTTP - _t0)) |"
+        } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"

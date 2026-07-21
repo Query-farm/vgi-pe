@@ -8,6 +8,10 @@ on:
     branches: [main]
     paths-ignore: ['README.md']
   workflow_dispatch:
+  # Allow the docker-publish + release workflows to gate on this CI by calling it
+  # (`jobs.ci: uses: ./.github/workflows/ci.yml`). Without this the caller fails
+  # at 0s with "workflow does not have on.workflow_call".
+  workflow_call:
 
 permissions:
   contents: read
