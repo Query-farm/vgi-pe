@@ -78,7 +78,7 @@ dev = [
 # is suppressed for this object only. (Single-signature table functions surface
 # the name fine — e.g. the sibling `vgi-calendar` `rrule`.)
 [tool.vgi-lint-check.per_object."pe.main.strings"]
-ignore = ["VGI305"]
+ignore = [{ code = "VGI305", kind = "tooling-bug", reason = "`strings` is the one table function that pairs a positional binary argument with a named one (`min_len :=`), AND it is registered twice (the VARCHAR-path and BLOB-bytes overloads share the `strings` name — the worker's deliberate path/bytes overload idiom, see CLAUDE.md). DuckDB cannot surface a ..." }]
 
 [tool.vgi-lint-check.options]
 # VGI315: the polymorphic `binary` argument is deliberately declared with two
