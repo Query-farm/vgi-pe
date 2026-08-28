@@ -36,7 +36,7 @@ dependencies = [
     # `required_field_filter_paths` to the nested `required_filters` (CNF). The
     # current signed `vgi` community extension now REQUIRES this newer schema, so
     # the previous `<0.15` cap has been lifted.
-    "vgi-python[http]>=0.16.0",
+    "vgi-python[http]>=0.30.0",
     "lief>=0.15",
     "pyarrow",
 ]
@@ -49,13 +49,13 @@ dependencies = [
 # explicit extra keeps the `--extra http` install knob the CI job uses.)
 http = [
     # Keep in lockstep with the main dependency's cap (see the note above).
-    "vgi-python[http]>=0.16.0",
+    "vgi-python[http]>=0.30.0",
 ]
 # HTTP-serving extra installed by the container image (`pip install '.[serve]'`).
 # Alias of `http`: pulls vgi-python's HTTP extra (waitress) so `vgi-serve
 # vgi_pe.worker:PeWorker --http` can run inside the slim image.
 serve = [
-    "vgi-python[http]>=0.16.0",
+    "vgi-python[http]>=0.30.0",
 ]
 dev = [
     "pytest>=8",
