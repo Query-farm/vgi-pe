@@ -30,7 +30,7 @@ never a hang. (Static analysis only: the binary is never executed.)
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import pyarrow as pa
 from vgi.arguments import Param, Returns
@@ -64,13 +64,16 @@ def _sources_from_bytes(arr: pa.BinaryArray) -> list[BinarySource | None]:
     return [BinarySource.from_bytes(x) for x in arr.to_pylist()]
 
 
-def _map(
+def _map[A: pa.Array[Any]](
     srcs: list[BinarySource | None],
     fn: Callable[[BinarySource], Any],
     arrow_type: pa.DataType,
-) -> pa.Array:
+    array_cls: type[A],
+) -> A:
+    # ``pa.array`` returns ``array_cls`` for ``arrow_type``; the stubs only say
+    # ``Array[Any]``, so narrow it for the typed ``compute`` signatures.
     out = [None if s is None else fn(s) for s in srcs]
-    return pa.array(out, type=arrow_type)
+    return cast(A, pa.array(out, type=arrow_type))
 
 
 # A small factory would be tidy, but a nested ``class Meta`` body cannot close
@@ -138,7 +141,7 @@ class BinaryFormatPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.binary_format, pa.string())
+        return _map(_sources_from_paths(binary), core.binary_format, pa.string(), pa.StringArray)
 
 
 class BinaryFormatBytesFunction(ScalarFunction):
@@ -163,7 +166,7 @@ class BinaryFormatBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.binary_format, pa.string())
+        return _map(_sources_from_bytes(binary), core.binary_format, pa.string(), pa.StringArray)
 
 
 # ===========================================================================
@@ -227,7 +230,7 @@ class IsSignedPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.BooleanArray, Returns(arrow_type=pa.bool_())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.is_signed, pa.bool_())
+        return _map(_sources_from_paths(binary), core.is_signed, pa.bool_(), pa.BooleanArray)
 
 
 class IsSignedBytesFunction(ScalarFunction):
@@ -252,7 +255,7 @@ class IsSignedBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.BooleanArray, Returns(arrow_type=pa.bool_())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.is_signed, pa.bool_())
+        return _map(_sources_from_bytes(binary), core.is_signed, pa.bool_(), pa.BooleanArray)
 
 
 # ===========================================================================
@@ -313,7 +316,7 @@ class EntryPointPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.UInt64Array, Returns(arrow_type=pa.uint64())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.entry_point, pa.uint64())
+        return _map(_sources_from_paths(binary), core.entry_point, pa.uint64(), pa.UInt64Array)
 
 
 class EntryPointBytesFunction(ScalarFunction):
@@ -338,7 +341,7 @@ class EntryPointBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.UInt64Array, Returns(arrow_type=pa.uint64())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.entry_point, pa.uint64())
+        return _map(_sources_from_bytes(binary), core.entry_point, pa.uint64(), pa.UInt64Array)
 
 
 # ===========================================================================
@@ -399,7 +402,7 @@ class MachinePathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.machine, pa.string())
+        return _map(_sources_from_paths(binary), core.machine, pa.string(), pa.StringArray)
 
 
 class MachineBytesFunction(ScalarFunction):
@@ -424,7 +427,7 @@ class MachineBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.machine, pa.string())
+        return _map(_sources_from_bytes(binary), core.machine, pa.string(), pa.StringArray)
 
 
 # ===========================================================================
@@ -436,7 +439,7 @@ class MachineBytesFunction(ScalarFunction):
 _TS_TYPE = pa.timestamp("us")
 
 
-def _timestamps(srcs: list[BinarySource | None]) -> pa.Array:
+def _timestamps(srcs: list[BinarySource | None]) -> pa.Array[Any]:
     out: list[int | None] = []
     for s in srcs:
         if s is None:
@@ -506,7 +509,7 @@ class CompileTimestampPathFunction(ScalarFunction):
     @classmethod
     def compute(
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
-    ) -> Annotated[pa.Array, Returns(arrow_type=_TS_TYPE)]:
+    ) -> Annotated[pa.Array[Any], Returns(arrow_type=_TS_TYPE)]:
         """Compute the per-row result array for the input batch."""
         return _timestamps(_sources_from_paths(binary))
 
@@ -531,7 +534,7 @@ class CompileTimestampBytesFunction(ScalarFunction):
     @classmethod
     def compute(
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
-    ) -> Annotated[pa.Array, Returns(arrow_type=_TS_TYPE)]:
+    ) -> Annotated[pa.Array[Any], Returns(arrow_type=_TS_TYPE)]:
         """Compute the per-row result array for the input batch."""
         return _timestamps(_sources_from_bytes(binary))
 
@@ -594,7 +597,7 @@ class SectionCountPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.Int32Array, Returns(arrow_type=pa.int32())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.section_count, pa.int32())
+        return _map(_sources_from_paths(binary), core.section_count, pa.int32(), pa.Int32Array)
 
 
 class SectionCountBytesFunction(ScalarFunction):
@@ -619,7 +622,7 @@ class SectionCountBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.Int32Array, Returns(arrow_type=pa.int32())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.section_count, pa.int32())
+        return _map(_sources_from_bytes(binary), core.section_count, pa.int32(), pa.Int32Array)
 
 
 # ===========================================================================
@@ -683,7 +686,7 @@ class OverallEntropyPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.DoubleArray, Returns(arrow_type=pa.float64())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.overall_entropy, pa.float64())
+        return _map(_sources_from_paths(binary), core.overall_entropy, pa.float64(), pa.DoubleArray)
 
 
 class OverallEntropyBytesFunction(ScalarFunction):
@@ -708,7 +711,7 @@ class OverallEntropyBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.DoubleArray, Returns(arrow_type=pa.float64())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.overall_entropy, pa.float64())
+        return _map(_sources_from_bytes(binary), core.overall_entropy, pa.float64(), pa.DoubleArray)
 
 
 # ===========================================================================
@@ -771,7 +774,7 @@ class ImphashPathFunction(ScalarFunction):
         cls, binary: Annotated[pa.StringArray, Param(doc="Filesystem path to a binary.")]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_paths(binary), core.imphash, pa.string())
+        return _map(_sources_from_paths(binary), core.imphash, pa.string(), pa.StringArray)
 
 
 class ImphashBytesFunction(ScalarFunction):
@@ -796,7 +799,7 @@ class ImphashBytesFunction(ScalarFunction):
         cls, binary: Annotated[pa.BinaryArray, Param(doc="Raw binary bytes.", arrow_type=pa.binary())]
     ) -> Annotated[pa.StringArray, Returns(arrow_type=pa.string())]:
         """Compute the per-row result array for the input batch."""
-        return _map(_sources_from_bytes(binary), core.imphash, pa.string())
+        return _map(_sources_from_bytes(binary), core.imphash, pa.string(), pa.StringArray)
 
 
 SCALAR_FUNCTIONS: list[type] = [

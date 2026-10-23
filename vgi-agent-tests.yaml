@@ -1,0 +1,43 @@
+# Private graders for `vgi-lint simulate` (VGI416). The worker publishes only
+# task names and prompts in vgi.agent_test_tasks; these canonical solutions and
+# grading options stay in the repo and are merged by task name.
+tasks:
+  - name: detect-format
+    reference_sql: "SELECT pe.main.binary_format('test/sql/data/hello.exe')"
+    ignore_column_names: true
+  - name: target-architecture
+    reference_sql: "SELECT pe.main.machine('test/sql/data/hello.exe')"
+    ignore_column_names: true
+  - name: entry-point-high
+    reference_sql: "SELECT pe.main.entry_point('test/sql/data/hello.exe') > 1000000000"
+    ignore_column_names: true
+  - name: many-sections
+    reference_sql: "SELECT pe.main.section_count('test/sql/data/hello.exe') > 10"
+    ignore_column_names: true
+  - name: entropy-in-range
+    reference_sql: "SELECT pe.main.overall_entropy('test/sql/data/hello.exe') BETWEEN 4 AND 7"
+    ignore_column_names: true
+  - name: macho-is-signed
+    reference_sql: "SELECT pe.main.is_signed('test/sql/data/hello_macho')"
+    ignore_column_names: true
+  - name: build-year
+    reference_sql: "SELECT year(pe.main.compile_timestamp('test/sql/data/hello.exe')) = 2023"
+    ignore_column_names: true
+  - name: import-hash
+    reference_sql: "SELECT pe.main.imphash('test/sql/data/hello.exe')"
+    ignore_column_names: true
+  - name: top-section-entropy
+    reference_sql: "SELECT max(entropy) > 5.0 FROM pe.main.sections('test/sql/data/hello.exe')"
+    ignore_column_names: true
+  - name: has-many-imports
+    reference_sql: "SELECT count(*) > 10 FROM pe.main.imports('test/sql/data/hello.exe')"
+    ignore_column_names: true
+  - name: macho-has-exports
+    reference_sql: "SELECT count(*) >= 1 FROM pe.main.exports('test/sql/data/hello_macho')"
+    ignore_column_names: true
+  - name: many-long-strings
+    reference_sql: "SELECT count(*) > 100 FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)"
+    ignore_column_names: true
+  - name: catalog-scalar-count
+    reference_sql: "SELECT count(*) > 5 FROM pe.main.analyses WHERE kind = 'scalar'"
+    ignore_column_names: true

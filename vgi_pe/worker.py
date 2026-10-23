@@ -214,7 +214,10 @@ _SCHEMA_CATEGORIES = json.dumps(
 # VGI152/VGI407/VGI520/VGI920: a fixed, version-controlled agent-suitability
 # suite. The --ai agent-simulation pass runs an LLM analyst through each `prompt`
 # (the ONLY field it sees) against the attached worker and grades its answer
-# against the grader-only `reference_sql`. Every function and the `analyses`
+# against the grader-only `reference_sql`. VGI416: the grader-only fields
+# (`reference_sql`, `ignore_column_names`) live in the private
+# `vgi-agent-tests.yaml` sidecar at the repo root; this public tag carries only
+# {name, prompt}. Every function and the `analyses`
 # discovery table is exercised by at least one task (VGI520), and each targets a
 # committed fixture by relative path (worker cwd = repo root) so it runs
 # deterministically.
@@ -225,7 +228,7 @@ _SCHEMA_CATEGORIES = json.dumps(
 # stable BOOLEAN. Only genuinely fixed strings (format, architecture, imphash of
 # the byte-deterministic PE) are compared exactly. All tasks return a single
 # value whose column label depends on how the analyst spells the call, so they
-# grade by VALUE only (`ignore_column_names`). Every reference value below was
+# grade by VALUE only (`ignore_column_names`). Every reference value in the sidecar was
 # verified by actually running the query against the committed fixtures.
 _AGENT_TEST_TASKS = json.dumps(
     [
@@ -236,8 +239,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, return the executable container-format "
                 "value (PE, ELF, or Mach-O) of the file at path 'test/sql/data/hello.exe'."
             ),
-            "reference_sql": "SELECT pe.main.binary_format('test/sql/data/hello.exe')",
-            "ignore_column_names": True,
         },
         {
             "name": "target-architecture",
@@ -245,8 +246,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, return the CPU-architecture value that the "
                 "binary at path 'test/sql/data/hello.exe' targets."
             ),
-            "reference_sql": "SELECT pe.main.machine('test/sql/data/hello.exe')",
-            "ignore_column_names": True,
         },
         # --- structure (threshold predicates) ---
         {
@@ -255,8 +254,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, is the entry-point virtual address of the file "
                 "at path 'test/sql/data/hello.exe' greater than 1000000000? Return a boolean."
             ),
-            "reference_sql": "SELECT pe.main.entry_point('test/sql/data/hello.exe') > 1000000000",
-            "ignore_column_names": True,
         },
         {
             "name": "many-sections",
@@ -264,8 +261,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello.exe' "
                 "have more than 10 sections? Return a boolean."
             ),
-            "reference_sql": "SELECT pe.main.section_count('test/sql/data/hello.exe') > 10",
-            "ignore_column_names": True,
         },
         # --- entropy (threshold predicate) ---
         {
@@ -275,8 +270,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "of the file at path 'test/sql/data/hello.exe' between 4 and 7 inclusive? Return a "
                 "boolean."
             ),
-            "reference_sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe') BETWEEN 4 AND 7",
-            "ignore_column_names": True,
         },
         # --- signing / provenance ---
         {
@@ -285,8 +278,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, is the file at path 'test/sql/data/hello_macho' "
                 "code-signed (does it carry an embedded code signature)? Return the boolean."
             ),
-            "reference_sql": "SELECT pe.main.is_signed('test/sql/data/hello_macho')",
-            "ignore_column_names": True,
         },
         {
             "name": "build-year",
@@ -294,8 +285,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, was the PE at path 'test/sql/data/hello.exe' "
                 "built in the year 2023 according to its build timestamp? Return a boolean."
             ),
-            "reference_sql": "SELECT year(pe.main.compile_timestamp('test/sql/data/hello.exe')) = 2023",
-            "ignore_column_names": True,
         },
         {
             "name": "import-hash",
@@ -303,8 +292,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, return the PE import hash (imphash) of the file "
                 "at path 'test/sql/data/hello.exe'."
             ),
-            "reference_sql": "SELECT pe.main.imphash('test/sql/data/hello.exe')",
-            "ignore_column_names": True,
         },
         # --- set-returning tables (threshold predicates; literal args only) ---
         {
@@ -313,8 +300,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, across the sections of 'test/sql/data/hello.exe', "
                 "is the highest per-section entropy greater than 5.0? Return a boolean."
             ),
-            "reference_sql": "SELECT max(entropy) > 5.0 FROM pe.main.sections('test/sql/data/hello.exe')",
-            "ignore_column_names": True,
         },
         {
             "name": "has-many-imports",
@@ -322,8 +307,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, does the binary at path 'test/sql/data/hello.exe' "
                 "import more than 10 symbols? Return a boolean."
             ),
-            "reference_sql": "SELECT count(*) > 10 FROM pe.main.imports('test/sql/data/hello.exe')",
-            "ignore_column_names": True,
         },
         {
             "name": "macho-has-exports",
@@ -331,8 +314,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello_macho' "
                 "export at least one symbol? Return a boolean."
             ),
-            "reference_sql": "SELECT count(*) >= 1 FROM pe.main.exports('test/sql/data/hello_macho')",
-            "ignore_column_names": True,
         },
         {
             "name": "many-long-strings",
@@ -340,8 +321,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello.exe' "
                 "contain more than 100 printable strings of length 8 or more? Return a boolean."
             ),
-            "reference_sql": ("SELECT count(*) > 100 FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)"),
-            "ignore_column_names": True,
         },
         # --- discovery table ---
         {
@@ -350,8 +329,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the attached 'pe' worker's analysis catalog, are more than 5 analyses "
                 "listed as scalar functions? Return a boolean."
             ),
-            "reference_sql": "SELECT count(*) > 5 FROM pe.main.analyses WHERE kind = 'scalar'",
-            "ignore_column_names": True,
         },
     ]
 )
@@ -400,7 +377,7 @@ _PE_CATALOG = Catalog(
     },
     schemas=[
         Schema(
-            name="main",
+            path=["main"],
             comment="Binary-analysis functions: format/architecture, entry point, signing, entropy, imphash, sections, imports, exports, and strings over PE/ELF/Mach-O input",  # noqa: E501
             tags={
                 "vgi.title": "Binary Triage Functions",
