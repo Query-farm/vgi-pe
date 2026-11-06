@@ -41,7 +41,7 @@ from __future__ import annotations
 import json
 
 from vgi import Worker
-from vgi.catalog import Catalog, Schema, Table
+from vgi.catalog import Catalog, ConstraintInfo, Schema, Table, constraint_record
 
 from vgi_pe.meta import keywords_array
 from vgi_pe.scalars import SCALAR_FUNCTIONS
@@ -333,6 +333,27 @@ _AGENT_TEST_TASKS = json.dumps(
     ]
 )
 
+
+def _trusted(table: str, constraint_id: str, kind: str, columns: list[list[str]]) -> ConstraintInfo:
+    """Build an ENFORCED + ALL_ROWS constraint record on a ``main``-schema table.
+
+    DuckDB only reads trusted records, so declare one only when every row the
+    table can return satisfies it.
+
+    Args:
+        table: Table name.
+        constraint_id: Identifier unique within the table.
+        kind: ``"PRIMARY_KEY"``, ``"UNIQUE"`` or ``"NOT_NULL"``.
+        columns: Column paths the constraint covers (e.g. ``[["name"]]``).
+
+    Returns:
+        The canonical constraint record.
+    """
+    return constraint_record(
+        ["main"], table, constraint_id, kind, columns, enforcement="ENFORCED", validation="ALL_ROWS"
+    )
+
+
 # VGI146: a browsable, argument-free discovery table so an agent can see what the
 # worker offers before it owns a binary. Backed by the parameterless
 # `AnalysesFunction` (a curated in-memory registry — no file, no network), so
@@ -344,8 +365,13 @@ _DISCOVERY_TABLES: list[Table] = [
         name="analyses",
         function=AnalysesFunction,
         comment="Browsable registry of every analysis (scalar/table) this worker exposes (discovery table).",
-        primary_key=(("name",),),
-        not_null=("name", "kind", "category", "formats", "result"),
+        constraints=(
+            _trusted("analyses", "pk", "PRIMARY_KEY", [["name"]]),
+            *(
+                _trusted("analyses", f"{col}_not_null", "NOT_NULL", [[col]])
+                for col in ("kind", "category", "formats", "result")
+            ),
+        ),
         column_comments={
             "name": "Function name to call (e.g. `imphash`, `sections`).",
             "kind": "`scalar` (one value per binary) or `table` (many rows per binary).",

@@ -8,7 +8,7 @@ statement ok
 LOAD vgi;
 
 statement ok
-ATTACH 'pe' AS pe (TYPE vgi, LOCATION '${VGI_PE_WORKER}');
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION '{VGI_PE_WORKER}');
 
 # ---- sections: rows, ordered, entropy in range, PE flags --------------------
 
