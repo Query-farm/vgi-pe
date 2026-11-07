@@ -20,7 +20,7 @@ parser for PE / ELF / Mach-O.
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
-ATTACH 'pe' (TYPE vgi, LOCATION 'uv run pe_worker.py');
+ATTACH 'pe' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.2.0 vgi-pe-worker');
 
 SELECT pe.binary_format('sample.exe');            -- 'PE' | 'ELF' | 'MachO' | NULL
 SELECT pe.machine('sample.exe');                  -- 'X86_64', 'ARM64', ...
@@ -33,6 +33,39 @@ SELECT * FROM pe.imports('sample.exe');                  -- imported symbols
 SELECT * FROM pe.exports('sample.so');                   -- exported symbols
 SELECT * FROM pe.strings('sample.exe', min_len := 8);    -- printable strings
 ```
+
+## Quick start
+
+The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from a tagged release on GitHub. `uvx` builds an isolated environment on the first ATTACH and reuses it afterwards:
+
+```sql
+INSTALL vgi FROM community;
+LOAD vgi;
+
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.2.0 vgi-pe-worker');
+
+-- Browse the worker's analysis catalog before owning a binary.
+SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name;
+
+-- Detect the executable container format of a sample.
+SELECT pe.main.binary_format('hello.exe');
+```
+
+Change `@v0.2.0` to move to a newer release.
+
+### Other ways to run it
+
+- **Docker** (the image bundles the worker and its dependencies):
+
+  ```sql
+  ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-pe:0.2.0');
+  ```
+
+- **From a local checkout** (`git clone https://github.com/Query-farm/vgi-pe`), point `LOCATION` at `uv run --project /path/to/vgi-pe vgi-pe-worker`.
+
+### Build from source
+
+To build and test the worker yourself from a checkout, see [Development](#development).
 
 ## Function surface
 
