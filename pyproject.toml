@@ -1,6 +1,6 @@
 [project]
 name = "vgi-pe"
-version = "0.2.0"
+version = "0.3.0"
 description = "Static analysis of executable binaries (PE/ELF/Mach-O) for DuckDB via VGI — malware triage"
 readme = "README.md"
 keywords = [
