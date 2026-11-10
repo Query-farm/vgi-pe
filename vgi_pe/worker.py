@@ -389,7 +389,8 @@ _PE_CATALOG = Catalog(
     comment="Defensive malware-triage worker: static, read-only analysis of PE/ELF/Mach-O executables as SQL functions (the binary is never executed)",  # noqa: E501
     source_url="https://github.com/Query-farm/vgi-pe",
     tags={
-        "vgi.title": "Executable Binary Triage (PE / ELF / Mach-O)",
+        "vgi.title": "Executable Binary Triage",
+        "vgi.subtitle": "Inspect PE, ELF and Mach-O executables for malware triage without ever running them.",
         "vgi.keywords": keywords_array(_CATALOG_KEYWORDS),
         "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
         "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
