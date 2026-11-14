@@ -37,6 +37,13 @@ SELECT bool_and(characteristics = '') FROM pe.sections('test/sql/data/hello_elf'
 ----
 true
 
+# A constant-byte section (the zero-filled PE .tls) reports +0.0, never -0.0
+# (LIEF returns -0.0 there; the worker normalizes it).
+query I
+SELECT entropy::VARCHAR FROM pe.sections('test/sql/data/hello.exe') WHERE name = '.tls';
+----
+0.0
+
 # ---- imports: PE imports grouped by DLL -------------------------------------
 
 query I

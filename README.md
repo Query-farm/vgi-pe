@@ -32,6 +32,11 @@ SELECT * FROM pe.sections('sample.exe') ORDER BY name;   -- per-section entropy 
 SELECT * FROM pe.imports('sample.exe');                  -- imported symbols
 SELECT * FROM pe.exports('sample.so');                   -- exported symbols
 SELECT * FROM pe.strings('sample.exe', min_len := 8);    -- printable strings
+
+-- Compose them: triage a whole folder in one pass (non-executables come back NULL)
+SELECT filename, pe.binary_format(content) AS container, pe.machine(content) AS arch,
+       pe.is_signed(content) AS signed, pe.overall_entropy(content) AS file_entropy
+FROM read_blob('samples/*') ORDER BY filename;
 ```
 
 ## Quick start

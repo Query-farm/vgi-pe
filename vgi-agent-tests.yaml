@@ -41,3 +41,9 @@ tasks:
   - name: catalog-scalar-count
     reference_sql: "SELECT count(*) > 5 FROM pe.main.analyses WHERE kind = 'scalar'"
     ignore_column_names: true
+  - name: corpus-many-sections
+    reference_sql: "SELECT count(*) FROM read_blob('test/sql/data/*') WHERE pe.main.binary_format(content) IS NOT NULL AND pe.main.section_count(content) > 6"
+    ignore_column_names: true
+  - name: corpus-lowest-entropy-format
+    reference_sql: "SELECT pe.main.binary_format(content) FROM read_blob('test/sql/data/*') WHERE pe.main.binary_format(content) IS NOT NULL ORDER BY pe.main.overall_entropy(content) LIMIT 1"
+    ignore_column_names: true

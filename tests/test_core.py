@@ -8,6 +8,8 @@ bytes -> None / empty, non-binary text -> None, never a crash.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from vgi_pe import core
@@ -148,6 +150,13 @@ def test_sections_rows() -> None:
         assert vsize >= 0
         assert raw >= 0
         assert 0.0 <= entropy <= 8.0
+
+
+def test_sections_entropy_never_negative_zero() -> None:
+    # LIEF yields -0.0 for the fixture's zero-filled `.tls` section; it must
+    # surface as +0.0 (math.copysign distinguishes the two).
+    for name, _vsize, _raw, entropy, _flags in core.sections(_pe()):
+        assert math.copysign(1.0, entropy) == 1.0, name
 
 
 def test_sections_pe_has_text_with_code_flag() -> None:

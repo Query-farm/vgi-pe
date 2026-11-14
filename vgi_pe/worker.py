@@ -43,6 +43,7 @@ import json
 from vgi import Worker
 from vgi.catalog import Catalog, ConstraintInfo, Schema, Table, constraint_record
 
+from vgi_pe.examples import CORPUS_TRIAGE, IMPHASH_CLUSTERS, SECTIONS_ABOVE_FILE_ENTROPY
 from vgi_pe.meta import keywords_array
 from vgi_pe.scalars import SCALAR_FUNCTIONS
 from vgi_pe.tables import TABLE_FUNCTIONS, AnalysesFunction
@@ -155,6 +156,10 @@ _SCHEMA_EXAMPLE_QUERIES = json.dumps(
             "description": "Extract long printable strings for IOC hunting.",
             "sql": "SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10",
         },
+        # Composed: several of the worker's functions in one query (vgi_pe/examples.py).
+        CORPUS_TRIAGE,
+        SECTIONS_ABOVE_FILE_ENTROPY,
+        IMPHASH_CLUSTERS,
     ]
 )
 _CATALOG_KEYWORDS = (
@@ -320,6 +325,24 @@ _AGENT_TEST_TASKS = json.dumps(
             "prompt": (
                 "Using the attached 'pe' worker, does the file at path 'test/sql/data/hello.exe' "
                 "contain more than 100 printable strings of length 8 or more? Return a boolean."
+            ),
+        },
+        # --- composed: several functions over a folder (exact single value) ---
+        {
+            "name": "corpus-many-sections",
+            "prompt": (
+                "Using the attached 'pe' worker, how many files in the directory 'test/sql/data' are "
+                "executables the worker recognizes (PE, ELF, or Mach-O) AND have more than 6 sections? "
+                "Return a single integer."
+            ),
+        },
+        {
+            "name": "corpus-lowest-entropy-format",
+            "prompt": (
+                "Using the attached 'pe' worker, among the files in the directory 'test/sql/data' that "
+                "the worker recognizes as executables, find the one with the lowest whole-file entropy "
+                "and return only its container format exactly as the worker reports it (a single "
+                "VARCHAR value)."
             ),
         },
         # --- discovery table ---

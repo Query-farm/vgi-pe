@@ -384,7 +384,9 @@ def sections(src: BinarySource) -> list[tuple[str, int, int, float, str]]:
                 virtual_size = int(getattr(section, "virtual_size", 0) or 0)
                 raw_size = int(getattr(section, "size", 0) or 0)
                 try:
-                    entropy = float(section.entropy)
+                    # LIEF reports a constant-byte section (e.g. a zero-filled
+                    # PE `.tls`) as -0.0; normalize so SQL never shows `-0.0`.
+                    entropy = max(0.0, float(section.entropy))
                 except Exception:
                     entropy = 0.0
                 characteristics = _pe_characteristics(section) if is_pe else ""

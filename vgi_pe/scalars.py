@@ -39,6 +39,7 @@ from vgi.scalar_function import ScalarFunction
 
 from . import core, meta
 from .core import BinarySource
+from .examples import CORPUS_TRIAGE, IMPHASH_CLUSTERS
 
 # A real, committed PE fixture the worker can open by relative path (the worker's
 # cwd is the repo root). Used so per-function examples actually EXECUTE and
@@ -115,6 +116,7 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
             "sql": f"SELECT pe.main.binary_format('{_PE_FIXTURE}')",
         },
         {"description": "Detect the executable format of bytes", "sql": f"SELECT pe.main.binary_format({_PE_BLOB})"},
+        CORPUS_TRIAGE,
     ],
 )
 
@@ -159,6 +161,7 @@ class BinaryFormatBytesFunction(ScalarFunction):
                 sql=f"SELECT pe.main.binary_format({_PE_BLOB})",
                 description="Detect the executable format of bytes",
             ),
+            FunctionExample(sql=CORPUS_TRIAGE["sql"], description=CORPUS_TRIAGE["description"]),
         ]
 
     @classmethod
@@ -748,6 +751,7 @@ _IMPHASH_TAGS = meta.object_tags(
     examples=[
         {"description": "Import hash of a PE file", "sql": f"SELECT pe.main.imphash('{_PE_FIXTURE}')"},
         {"description": "Import hash of PE bytes", "sql": f"SELECT pe.main.imphash({_PE_BLOB})"},
+        IMPHASH_CLUSTERS,
     ],
 )
 
@@ -792,6 +796,7 @@ class ImphashBytesFunction(ScalarFunction):
                 sql=f"SELECT pe.main.imphash({_PE_BLOB})",
                 description="Import hash of PE bytes",
             ),
+            FunctionExample(sql=IMPHASH_CLUSTERS["sql"], description=IMPHASH_CLUSTERS["description"]),
         ]
 
     @classmethod

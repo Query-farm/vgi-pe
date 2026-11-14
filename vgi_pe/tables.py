@@ -44,6 +44,7 @@ from vgi_rpc.rpc import OutputCollector
 
 from . import core, meta
 from .core import BinarySource
+from .examples import SECTIONS_ABOVE_FILE_ENTROPY
 from .schema_utils import field
 
 # Real, committed fixtures the worker can open by relative path (the worker's cwd
@@ -169,6 +170,7 @@ _SECTIONS_EXECUTABLE_EXAMPLES = json.dumps(
             "description": "Flag high-entropy sections (a packing/encryption signal).",
             "sql": f"SELECT name, entropy FROM pe.main.sections('{_PE_FIXTURE}') WHERE entropy > 6",
         },
+        SECTIONS_ABOVE_FILE_ENTROPY,
         {
             "description": "Count the imported symbols of a PE.",
             "sql": f"SELECT count(*) AS imports FROM pe.main.imports('{_PE_FIXTURE}')",
@@ -219,6 +221,7 @@ _SECTIONS_TAGS = {
                     f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
                 ),
             },
+            SECTIONS_ABOVE_FILE_ENTROPY,
         ],
     ),
     "vgi.result_columns_schema": _SECTIONS_COLUMNS_SCHEMA,
@@ -420,6 +423,10 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
                     f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
                 ),
                 description="Top sections by entropy (a packing signal)",
+            ),
+            FunctionExample(
+                sql=SECTIONS_ABOVE_FILE_ENTROPY["sql"],
+                description=SECTIONS_ABOVE_FILE_ENTROPY["description"],
             ),
         ]
 
