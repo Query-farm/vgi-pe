@@ -1,0 +1,12 @@
+{
+  "source_commit": "f8fa94d52c8aba2020cd2f631425fd07d16f0a17",
+  "source_directory": "test/sql/data",
+  "note": "Four unchanged committed worker fixtures plus an authored empty input; never executed.",
+  "sha256": {
+    "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "garbage.bin": "b7d5a335f90fc2ca83afa72928e36e45b5e213198e69f9813651d019dc66643b",
+    "hello.exe": "6ee8fc82a363f756c2f61c967d7c6f5f47ddd4da98d79b333c41739412e75b13",
+    "hello_elf": "d115f77ab013d0028279e1ba32e6a00d331ce6e99157f1203e60314aff3499ce",
+    "hello_macho": "d9cac4f49149007d1b4ab1132bd566f0c06dae4316bce1d0d17777a38afe1abd"
+  }
+}

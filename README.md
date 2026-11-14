@@ -156,3 +156,7 @@ Written by [Query.Farm](https://query.farm).
 
 Copyright 2026 Query Farm LLC - https://query.farm
 
+
+## Notebooks
+
+[Executed SQL static-evidence walkthrough](notebooks/README.md): compare file and section entropy, retain unknown inputs, and explore printable-string extraction using benign committed binaries.
