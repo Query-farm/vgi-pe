@@ -1,0 +1,368 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+        "notes": "Complete actual catalog: 24 overloads form 12 logical function names, plus analyses table=13. Full table-return columns and argument signatures match current. Current core normalizes section entropy signed zero; metadata/examples also changed. All interfaces remain compatible; exact current notebook execution is not claimed."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "catalog_sha256": "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3",
+        "notes": "Complete actual catalog: 24 overloads form 12 logical function names, plus analyses table=13. Full table-return columns and argument signatures match current. Current core normalizes section entropy signed zero; metadata/examples also changed. All interfaces remain compatible; exact current notebook execution is not claimed."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "f7d9863d60953a175d9f7c5d3c25fd1c1a208f4d9c68a344c3265b0e47cc3aed"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "binary_format"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.binary_format"
+        }
+      ],
+      "narrative_cells": [
+        "source-story",
+        "entropy-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "format-finding",
+        "entropy-finding"
+      ],
+      "interpretation_cells": [
+        "format-finding",
+        "entropy-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Retain recognized, unknown, empty and missing input categories before interpreting metadata.",
+        "finding": "Three recognized formats among six inputs; unrecognized text and empty bytes differ from missing by byte count. Unrecognized text still yields printable strings, so parser recognition does not define every extraction population."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "machine"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.machine"
+        }
+      ],
+      "narrative_cells": [
+        "source-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "format-finding"
+      ],
+      "interpretation_cells": [
+        "format-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Compare returned target architecture together with format while retaining unavailable cases.",
+        "finding": "Three format/architecture pairs describe the three recognized fixtures; reported target architecture is metadata, not evidence of executed instructions or behavior."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "is_signed"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.is_signed"
+        }
+      ],
+      "narrative_cells": [
+        "source-story",
+        "entropy-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "entropy-finding"
+      ],
+      "interpretation_cells": [
+        "entropy-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Keep signature-presence observations attached to recognized format and explicitly limit their interpretation.",
+        "finding": "Mach-O has a signature-presence flag; ELF false follows this worker\u2019s embedded-signature convention. Neither result verifies cryptography, signer trust or maliciousness."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "compile_timestamp"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.compile_timestamp"
+        }
+      ],
+      "narrative_cells": [
+        "source-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "format-finding"
+      ],
+      "interpretation_cells": [
+        "format-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Separate fixed PE header metadata from observed build provenance and unavailable cross-format fields.",
+        "finding": "Exactly one fixture has a header timestamp; other formats remain NULL. Its fixed epoch is carried in a timezone-free UTC timestamp and is not independently verified build time."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "imphash"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.imphash"
+        }
+      ],
+      "narrative_cells": [
+        "source-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "format-finding"
+      ],
+      "interpretation_cells": [
+        "format-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Distinguish the format-specific import-table hash from whole-file SHA256 identity.",
+        "finding": "Exactly one PE fixture has an import hash; non-PE inputs remain NULL. The value is metadata over imports, not a full-file fingerprint, import resolution or a malware classification."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "overall_entropy"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.overall_entropy"
+        }
+      ],
+      "narrative_cells": [
+        "entropy-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "entropy-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "entropy-finding",
+        "checks-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Compare raw whole-file entropy to a section maximum and independently recompute recognized-file entropy.",
+        "finding": "All three recognized file metrics agree with independent byte-frequency Shannon calculations. Unknown/empty/missing inputs have no reported entropy; no risk threshold or average-of-sections claim is made."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "section_count"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "audit-query",
+          "reference": "pe.main.section_count"
+        }
+      ],
+      "narrative_cells": [
+        "entropy-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "audit-query",
+        "entropy-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "entropy-finding",
+        "checks-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Use reported section population as a reconciliation check for extracted section rows.",
+        "finding": "Reported section counts equal materialized section rows for each recognized fixture; unrecognized/empty files produce no section rows, while the left join retains all six inputs."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "sections"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "sections-query",
+          "reference": "pe.main.sections"
+        }
+      ],
+      "narrative_cells": [
+        "entropy-story"
+      ],
+      "result_cells": [
+        "sections-query",
+        "entropy-finding"
+      ],
+      "interpretation_cells": [
+        "entropy-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Locate the highest section entropy without confusing its byte population with the whole file.",
+        "finding": "The maximum section metric differs from whole-file entropy, especially the padded Mach-O fixture. Section characteristics are PE-specific, and current signed-zero normalization is documented rather than treated as scientific drift."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "strings"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "sql": [
+        {
+          "cell": "strings-query",
+          "reference": "pe.main.strings"
+        }
+      ],
+      "narrative_cells": [
+        "strings-story",
+        "denominator-story",
+        "experiment-story"
+      ],
+      "result_cells": [
+        "strings-query",
+        "strings-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "strings-finding",
+        "checks-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T21:43:27.064622+00:00",
+        "notebook_sha256": "ddb6999140d35b7ef5a6b46007b2cad5bd636a7a1b15c9894af3ab165a82604c",
+        "catalog_sha256": [
+          "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+          "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3"
+        ],
+        "purpose": "Compare minimum-length extraction with a fixed baseline while preserving multiplicity and source population.",
+        "finding": "Raising minimum 8\u219216 retains 932 of 2122 printable runs; text still emits runs and empty/missing retain zero counts. Selected rows equal baseline length filtering with multiplicity below the caps. Sequence values are result indices, not source offsets or evidence of use."
+      }
+    }
+  ]
+}

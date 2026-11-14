@@ -1,0 +1,871 @@
+{
+  "schema_version": 1,
+  "status": "met",
+  "meets_target": true,
+  "catalogs": {
+    "released": {
+      "catalog_status": "verified",
+      "revision": "v0.4.0",
+      "catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb",
+      "collection_reconciled": true,
+      "denominator": 13,
+      "observed_objects": 13,
+      "required": 7,
+      "verified_count": 9,
+      "candidate_count": 0,
+      "fraction": 0.6923076923076923,
+      "meets_target": true,
+      "exact_runtime_count": 9,
+      "runtime_revisions": [
+        "v0.4.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "binary_format"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "compile_timestamp"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imphash"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_signed"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "machine"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "overall_entropy"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "section_count"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sections"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "strings"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "analyses"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "entry_point"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "exports"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imports"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "analyses",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "TABLE(name VARCHAR, kind VARCHAR, category VARCHAR, formats VARCHAR, result VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "binary_format",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "binary_format(binary BLOB) -> VARCHAR",
+            "binary_format(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "compile_timestamp",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "compile_timestamp(binary BLOB) -> TIMESTAMP",
+            "compile_timestamp(binary VARCHAR) -> TIMESTAMP"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "entry_point",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "entry_point(binary BLOB) -> UBIGINT",
+            "entry_point(binary VARCHAR) -> UBIGINT"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "exports",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "exports(binary BLOB) -> TABLE(name VARCHAR, address UBIGINT)",
+            "exports(binary VARCHAR) -> TABLE(name VARCHAR, address UBIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imphash",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "imphash(binary BLOB) -> VARCHAR",
+            "imphash(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imports",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "imports(binary BLOB) -> TABLE(library VARCHAR, function VARCHAR)",
+            "imports(binary VARCHAR) -> TABLE(library VARCHAR, function VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_signed",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_signed(binary BLOB) -> BOOLEAN",
+            "is_signed(binary VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "machine",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "machine(binary BLOB) -> VARCHAR",
+            "machine(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "overall_entropy",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "overall_entropy(binary BLOB) -> DOUBLE",
+            "overall_entropy(binary VARCHAR) -> DOUBLE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "section_count",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "section_count(binary BLOB) -> INTEGER",
+            "section_count(binary VARCHAR) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sections",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "sections(binary BLOB) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)",
+            "sections(binary VARCHAR) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "strings",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "strings(binary BLOB, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)",
+            "strings(binary VARCHAR, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    "current": {
+      "catalog_status": "verified",
+      "revision": "ae6d4805669adc9a5483e8e93b14fbc1a29d5dcf",
+      "catalog_sha256": "05d064e7a960bc6050f6f48b0fe355175e21881a6a733b4039496a1ec2d764f3",
+      "collection_reconciled": true,
+      "denominator": 13,
+      "observed_objects": 13,
+      "required": 7,
+      "verified_count": 9,
+      "candidate_count": 0,
+      "fraction": 0.6923076923076923,
+      "meets_target": true,
+      "exact_runtime_count": 0,
+      "runtime_revisions": [
+        "v0.4.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "binary_format"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "compile_timestamp"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imphash"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_signed"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "machine"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "overall_entropy"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "section_count"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sections"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "strings"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "analyses"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "entry_point"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "exports"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imports"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "analyses",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "TABLE(name VARCHAR, kind VARCHAR, category VARCHAR, formats VARCHAR, result VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "binary_format",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "binary_format(binary BLOB) -> VARCHAR",
+            "binary_format(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "compile_timestamp",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "compile_timestamp(binary BLOB) -> TIMESTAMP",
+            "compile_timestamp(binary VARCHAR) -> TIMESTAMP"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "entry_point",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "entry_point(binary BLOB) -> UBIGINT",
+            "entry_point(binary VARCHAR) -> UBIGINT"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "exports",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "exports(binary BLOB) -> TABLE(name VARCHAR, address UBIGINT)",
+            "exports(binary VARCHAR) -> TABLE(name VARCHAR, address UBIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imphash",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "imphash(binary BLOB) -> VARCHAR",
+            "imphash(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "imports",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "imports(binary BLOB) -> TABLE(library VARCHAR, function VARCHAR)",
+            "imports(binary VARCHAR) -> TABLE(library VARCHAR, function VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_signed",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_signed(binary BLOB) -> BOOLEAN",
+            "is_signed(binary VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "machine",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "machine(binary BLOB) -> VARCHAR",
+            "machine(binary VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "overall_entropy",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "overall_entropy(binary BLOB) -> DOUBLE",
+            "overall_entropy(binary VARCHAR) -> DOUBLE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "section_count",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "section_count(binary BLOB) -> INTEGER",
+            "section_count(binary VARCHAR) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sections",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "sections(binary BLOB) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)",
+            "sections(binary VARCHAR) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "strings",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "strings(binary BLOB, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)",
+            "strings(binary VARCHAR, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  },
+  "interface_drift": {
+    "known": true,
+    "current_only": [],
+    "released_only": [],
+    "changed": []
+  },
+  "notebooks": {
+    "01_read_static_evidence_without_a_verdict.ipynb": {
+      "verified": true,
+      "issues": []
+    }
+  },
+  "examples": [
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "binary_format"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "machine"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "is_signed"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "compile_timestamp"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "imphash"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "overall_entropy"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "section_count"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "sections"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "strings"
+      },
+      "notebook": "01_read_static_evidence_without_a_verdict.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "2415439e6f860b0b572d8efda4e5025198489a70dd43ca1636e2f23936ef12cb"
+    }
+  ],
+  "issues": []
+}

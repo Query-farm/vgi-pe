@@ -1,0 +1,29 @@
+{
+  "query": "DESCRIBE SELECT * FROM pe.main.exports('fixtures/hello.exe')",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "name",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "address",
+      "UBIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

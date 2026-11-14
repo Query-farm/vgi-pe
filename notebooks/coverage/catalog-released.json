@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-pe",
+  "revision": "v0.4.0",
+  "captured_at": "2026-11-14T21:32:43.716408+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/analyses-columns.json",
+      "sha256": "038c85b096e843a8eabab61ca8edf47930868f350eb937ad041176a44304a11b",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/arguments.json",
+      "sha256": "e220e9f8ba1e7244edf6bfa2dd4a54642371bf37321c53e994eb91e38610a565",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/catalog-metadata.json",
+      "sha256": "495206adf40ea3f0a0f17d302dd8a94f81bd5f184c12e84a6eec09ad6b019bc0",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/exports-columns.json",
+      "sha256": "dbe6ea275e2bac838f522d0fb826bd0722479cded7c8dce612f25fedbf985bb8",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/functions.json",
+      "sha256": "f5d2e5696905cbbcc84a024d6d42993fc50f964301fefb01590996f1bdc58d3e",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/imports-columns.json",
+      "sha256": "7324068e65a60733ac3e0e990cda4bf007a063b779f1db34591a60b069583192",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/sections-columns.json",
+      "sha256": "7b313e1254cd5bc97d1c00792e242930a55e0aa68733f3e1b05010bd06809cbc",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/strings-columns.json",
+      "sha256": "213776d3b2f6ad9b4786e8ff054891b34e3065f9a3b8773fac85bdb0616c835e",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/tables.json",
+      "sha256": "ad8e76eb8a4d60db28887083906043a09e9a6f13e93deb5ad652528e2e8526aa",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/views.json",
+      "sha256": "69673d020503929009e7c621aadb3454e0a693f3efa1a9937fcbce8e3ffc9333",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    },
+    {
+      "path": "coverage/source-compatibility.json",
+      "sha256": "d4f80904cd43e200e88017417d1a5c08e0ddfef27cb1818c35a4692a6430a9ca",
+      "description": "Actual complete worker-filtered runtime catalog/argument export and complete table output DESCRIBE; reviewed source differences"
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "binary_format",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "binary_format(binary BLOB) -> VARCHAR",
+        "binary_format(binary VARCHAR) -> VARCHAR"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "compile_timestamp",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "compile_timestamp(binary BLOB) -> TIMESTAMP",
+        "compile_timestamp(binary VARCHAR) -> TIMESTAMP"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "entry_point",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "entry_point(binary BLOB) -> UBIGINT",
+        "entry_point(binary VARCHAR) -> UBIGINT"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "exports",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "exports(binary BLOB) -> TABLE(name VARCHAR, address UBIGINT)",
+        "exports(binary VARCHAR) -> TABLE(name VARCHAR, address UBIGINT)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "imphash",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "imphash(binary BLOB) -> VARCHAR",
+        "imphash(binary VARCHAR) -> VARCHAR"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "imports",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "imports(binary BLOB) -> TABLE(library VARCHAR, function VARCHAR)",
+        "imports(binary VARCHAR) -> TABLE(library VARCHAR, function VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "is_signed",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "is_signed(binary BLOB) -> BOOLEAN",
+        "is_signed(binary VARCHAR) -> BOOLEAN"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "machine",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "machine(binary BLOB) -> VARCHAR",
+        "machine(binary VARCHAR) -> VARCHAR"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "overall_entropy",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "overall_entropy(binary BLOB) -> DOUBLE",
+        "overall_entropy(binary VARCHAR) -> DOUBLE"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "section_count",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "section_count(binary BLOB) -> INTEGER",
+        "section_count(binary VARCHAR) -> INTEGER"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "sections",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "sections(binary BLOB) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)",
+        "sections(binary VARCHAR) -> TABLE(name VARCHAR, virtual_size BIGINT, raw_size BIGINT, entropy DOUBLE, characteristics VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "strings",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "strings(binary BLOB, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)",
+        "strings(binary VARCHAR, min_len INTEGER) -> TABLE(seq BIGINT, value VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "analyses",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(name VARCHAR, kind VARCHAR, category VARCHAR, formats VARCHAR, result VARCHAR)"
+      ]
+    }
+  ],
+  "launch": "uvx --python 3.13 --from git+https://github.com/Query-farm/vgi-pe@v0.4.0 vgi-pe-worker",
+  "runtime": "Haybarn2.0.0rc11",
+  "review_notes": "Twenty-four path/BLOB function overloads group into twelve named functions plus analyses catalog table = thirteen. All overloads and full output column signatures retained; no omitted auth/write surfaces."
+}

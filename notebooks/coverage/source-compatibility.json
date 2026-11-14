@@ -1,0 +1,15 @@
+{
+  "release": "v0.4.0",
+  "release_commit": "473ecf09bded3b87ee672aab3bf36903d635563d",
+  "current_revision": "ae6d4805669adc9a5483e8e93b14fbc1a29d5dcf",
+  "root_dependencies_unchanged": true,
+  "source_review": "Current core changes normalize section entropy -0.0 to +0.0; otherwise metadata/composed examples and tests changed. Returned column signatures match actual release/current exports. Release/current values are numerically equivalent for signed zero; do not claim byte-identical formatted output or unchanged core source.",
+  "source_ci": {
+    "url": "https://github.com/Query-farm/vgi-pe/actions/runs/43581576906",
+    "revision": "ae6d4805669adc9a5483e8e93b14fbc1a29d5dcf",
+    "conclusion": "success"
+  },
+  "runtime": "Haybarn2.0.0rc11",
+  "launch": "uvx --python 3.13 --from git+https://github.com/Query-farm/vgi-pe@v0.4.0 vgi-pe-worker",
+  "runtime_review": "Short release-owned dependency declaration works without notebook dependency overrides. Actual current catalog collected from immutable public main revision via uvx; no source-suite repetition or compiler/engine rebuild."
+}

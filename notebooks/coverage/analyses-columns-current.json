@@ -1,0 +1,53 @@
+{
+  "query": "DESCRIBE SELECT * FROM pe.main.analyses",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "name",
+      "VARCHAR",
+      "YES",
+      "PRI",
+      null,
+      null
+    ],
+    [
+      "kind",
+      "VARCHAR",
+      "NO",
+      null,
+      null,
+      null
+    ],
+    [
+      "category",
+      "VARCHAR",
+      "NO",
+      null,
+      null,
+      null
+    ],
+    [
+      "formats",
+      "VARCHAR",
+      "NO",
+      null,
+      null,
+      null
+    ],
+    [
+      "result",
+      "VARCHAR",
+      "NO",
+      null,
+      null,
+      null
+    ]
+  ]
+}

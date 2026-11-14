@@ -1,0 +1,52 @@
+{
+  "query": "SELECT * FROM duckdb_tables() WHERE database_name='pe' ORDER BY schema_name,table_name",
+  "captured_at": "2026-11-14T21:31:04.136368+00:00",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "table_name",
+    "table_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "has_primary_key",
+    "estimated_size",
+    "column_count",
+    "index_count",
+    "check_constraint_count",
+    "sql"
+  ],
+  "rows": [
+    [
+      "pe",
+      22592,
+      "main",
+      22593,
+      "analyses",
+      22739,
+      "Browsable registry of every analysis (scalar/table) this worker exposes (discovery table).",
+      {
+        "domain": "security",
+        "topic": "malware-triage",
+        "vgi.category": "discovery",
+        "vgi.doc_llm": "Browse the worker's own **analysis catalog** \u2014 one row per function this worker exposes, so you can discover its capabilities without supplying a binary first. Columns: `name` (the function to call), `kind` (`scalar` for one value per binary, `table` for many rows per binary), `category` (its navigation slug), `formats` (which of PE / ELF / Mach-O it applies to), and `result` (what it returns). This is a static registry: scanning it reads no file and touches no network.\n\nUse it as the entry point for planning: filter by `kind` to find scalars that fold into a projection, by `formats` to see what is PE-only (e.g. `imphash`, `compile_timestamp`), or by `category` to enumerate a family (e.g. all `signing` analyses). Then call the named function on an actual binary path or `BLOB`.",
+        "vgi.doc_md": "## analyses\n\nA browsable registry of every analysis this worker exposes \u2014 read it directly, without parentheses, to discover what the `pe` catalog can do before you have a binary in hand.\n\n### Columns\n\n| column | type | description |\n|---|---|---|\n| `name` | VARCHAR | Function name to call (e.g. `imphash`, `sections`). |\n| `kind` | VARCHAR | `scalar` (one value per binary) or `table` (many rows per binary). |\n| `category` | VARCHAR | Navigation category slug. |\n| `formats` | VARCHAR | Which of PE / ELF / Mach-O the analysis applies to. |\n| `result` | VARCHAR | What the analysis returns. |\n\nStatic, credential-free registry: scanning it reads no file and touches no network. Filter by `kind`, `formats`, or `category` to plan a triage query, then call the named function on a real binary.",
+        "vgi.example_queries": "[{\"description\": \"List the scalar analyses (one value per binary) in category order.\", \"sql\": \"SELECT name, category, result FROM pe.main.analyses WHERE kind = 'scalar' ORDER BY category, name\"}, {\"description\": \"Which analyses are PE-only?\", \"sql\": \"SELECT name FROM pe.main.analyses WHERE formats = 'PE only' ORDER BY name\"}, {\"description\": \"Count analyses by kind.\", \"sql\": \"SELECT kind, count(*) AS n FROM pe.main.analyses GROUP BY kind ORDER BY kind\"}]",
+        "vgi.keywords": "[\"analyses\", \"catalog\", \"registry\", \"discovery\", \"capabilities\", \"functions\", \"browse\", \"metadata\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Function name to call (e.g. `imphash`, `sections`).\"}, {\"name\": \"kind\", \"type\": \"VARCHAR\", \"description\": \"`scalar` (one value per binary) or `table` (many rows per binary).\"}, {\"name\": \"category\", \"type\": \"VARCHAR\", \"description\": \"Navigation category slug (format/structure/entropy/signing/symbols/strings).\"}, {\"name\": \"formats\", \"type\": \"VARCHAR\", \"description\": \"Which container formats the analysis applies to.\"}, {\"name\": \"result\", \"type\": \"VARCHAR\", \"description\": \"What the analysis returns.\"}]",
+        "vgi.title": "Analysis Catalog"
+      },
+      false,
+      false,
+      true,
+      0,
+      5,
+      1,
+      0,
+      "CREATE TABLE analyses(\"name\" VARCHAR, kind VARCHAR NOT NULL, category VARCHAR NOT NULL, formats VARCHAR NOT NULL, result VARCHAR NOT NULL, PRIMARY KEY(\"name\"));"
+    ]
+  ]
+}

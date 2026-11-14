@@ -1,0 +1,53 @@
+{
+  "query": "DESCRIBE SELECT * FROM pe.main.sections('fixtures/hello.exe')",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "name",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "virtual_size",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "raw_size",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "entropy",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "characteristics",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

@@ -1,0 +1,966 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='pe' ORDER BY schema_name,function_name,parameter_types",
+  "captured_at": "2026-11-14T21:31:12.627312+00:00",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "pe",
+      "22592",
+      "main",
+      "binary_format",
+      null,
+      "scalar",
+      "Executable format ('PE'/'ELF'/'MachO') of a binary (BLOB bytes), or NULL",
+      null,
+      {
+        "vgi.category": "format",
+        "vgi.doc_llm": "Detect the **container format** of an executable image and return it as a short string: `PE` (Windows portable executable), `ELF` (Linux/Unix), or `MachO` (macOS). Pass the binary as either a `VARCHAR` filesystem path the worker opens or a `BLOB` of raw bytes. Returns `NULL` when the input is NULL, empty, truncated, or not a recognizable executable, so it is safe to run across a mixed corpus.\n\nUse this first when triaging an unknown sample: the format decides which downstream signals are meaningful (e.g. `imphash` and `compile_timestamp` are PE-only). The binary is parsed statically and **never executed**.",
+        "vgi.doc_md": "## binary_format\n\nReturns the executable container format of a binary as `PE`, `ELF`, or `MachO`.\n\nCall it with a single argument \u2014 a `VARCHAR` filesystem path the worker opens, or a `BLOB` of raw bytes \u2014 and it returns the container-format string (for example `PE` for a Windows executable). Returns `NULL` for NULL, empty, or unrecognizable input \u2014 never an error. Typically the first step in a triage pipeline because the format gates which other functions apply. Ready-to-run example queries are attached to this function.",
+        "vgi.example_queries": "[{\"description\": \"Detect the executable format of a file\", \"sql\": \"SELECT pe.main.binary_format('test/sql/data/hello.exe')\"}, {\"description\": \"Detect the executable format of bytes\", \"sql\": \"SELECT pe.main.binary_format((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}, {\"description\": \"Triage every file in a folder in one pass: container format, CPU architecture, code-signing, section count and whole-file entropy per file (a non-executable such as garbage.bin comes back all-NULL instead of failing the query).\", \"sql\": \"SELECT filename, pe.main.binary_format(content) AS container, pe.main.machine(content) AS arch, pe.main.is_signed(content) AS signed, pe.main.section_count(content) AS n_sections, round(pe.main.overall_entropy(content), 2) AS file_entropy FROM read_blob('test/sql/data/*') ORDER BY filename\"}]",
+        "vgi.keywords": "[\"format\", \"file type\", \"magic\", \"PE\", \"ELF\", \"Mach-O\", \"MachO\", \"executable\", \"container\", \"detect\", \"identify\", \"binary type\"]",
+        "vgi.title": "Detect Executable Format"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT pe.main.binary_format((SELECT content FROM read_blob('test/sql/data/hello.exe')))",
+        "SELECT filename, pe.main.binary_format(content) AS container, pe.main.machine(content) AS arch, pe.main.is_signed(content) AS signed, pe.main.section_count(content) AS n_sections, round(pe.main.overall_entropy(content), 2) AS file_entropy FROM read_blob('test/sql/data/*') ORDER BY filename"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "format"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "binary_format",
+      null,
+      "scalar",
+      "Executable format ('PE'/'ELF'/'MachO') of a binary (VARCHAR path), or NULL",
+      null,
+      {
+        "vgi.category": "format",
+        "vgi.doc_llm": "Detect the **container format** of an executable image and return it as a short string: `PE` (Windows portable executable), `ELF` (Linux/Unix), or `MachO` (macOS). Pass the binary as either a `VARCHAR` filesystem path the worker opens or a `BLOB` of raw bytes. Returns `NULL` when the input is NULL, empty, truncated, or not a recognizable executable, so it is safe to run across a mixed corpus.\n\nUse this first when triaging an unknown sample: the format decides which downstream signals are meaningful (e.g. `imphash` and `compile_timestamp` are PE-only). The binary is parsed statically and **never executed**.",
+        "vgi.doc_md": "## binary_format\n\nReturns the executable container format of a binary as `PE`, `ELF`, or `MachO`.\n\nCall it with a single argument \u2014 a `VARCHAR` filesystem path the worker opens, or a `BLOB` of raw bytes \u2014 and it returns the container-format string (for example `PE` for a Windows executable). Returns `NULL` for NULL, empty, or unrecognizable input \u2014 never an error. Typically the first step in a triage pipeline because the format gates which other functions apply. Ready-to-run example queries are attached to this function.",
+        "vgi.example_queries": "[{\"description\": \"Detect the executable format of a file\", \"sql\": \"SELECT pe.main.binary_format('test/sql/data/hello.exe')\"}, {\"description\": \"Detect the executable format of bytes\", \"sql\": \"SELECT pe.main.binary_format((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}, {\"description\": \"Triage every file in a folder in one pass: container format, CPU architecture, code-signing, section count and whole-file entropy per file (a non-executable such as garbage.bin comes back all-NULL instead of failing the query).\", \"sql\": \"SELECT filename, pe.main.binary_format(content) AS container, pe.main.machine(content) AS arch, pe.main.is_signed(content) AS signed, pe.main.section_count(content) AS n_sections, round(pe.main.overall_entropy(content), 2) AS file_entropy FROM read_blob('test/sql/data/*') ORDER BY filename\"}]",
+        "vgi.keywords": "[\"format\", \"file type\", \"magic\", \"PE\", \"ELF\", \"Mach-O\", \"MachO\", \"executable\", \"container\", \"detect\", \"identify\", \"binary type\"]",
+        "vgi.title": "Detect Executable Format"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT pe.main.binary_format('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "format"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "compile_timestamp",
+      null,
+      "scalar",
+      "PE build timestamp (TimeDateStamp) of a binary (BLOB bytes); NULL for ELF/Mach-O",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return the PE **build timestamp** (the COFF header `TimeDateStamp`) as a `TIMESTAMP`. This is **PE-only**: ELF and Mach-O have no equivalent header field and return `NULL`, as does any unparseable input. The raw field is a Unix epoch in seconds; the worker scales it to microsecond-precision Arrow timestamp.\n\nUse it for build-provenance and timeline analysis \u2014 bucketing samples by build date, spotting implausible values (the field is attacker-controllable, so a zero, far-future, or suspiciously round timestamp is itself a signal), and correlating related builds. Treat the value as a *claim*, not ground truth.",
+        "vgi.doc_md": "## compile_timestamp\n\nThe PE COFF `TimeDateStamp` as a `TIMESTAMP` (PE only).\n\n### Usage\n\n```sql\nSELECT pe.compile_timestamp('sample.exe');\n```\n\nReturns `NULL` for ELF, Mach-O, and unparseable input. The field is stored as a Unix epoch (seconds) and is **attacker-controllable** \u2014 implausible values (zero, far future, round numbers) are a triage signal, not an error.",
+        "vgi.example_queries": "[{\"description\": \"PE compile timestamp of a binary file\", \"sql\": \"SELECT pe.main.compile_timestamp('test/sql/data/hello.exe')\"}, {\"description\": \"PE compile timestamp of binary bytes\", \"sql\": \"SELECT pe.main.compile_timestamp((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"compile timestamp\", \"build time\", \"TimeDateStamp\", \"PE header\", \"provenance\", \"timeline\", \"metadata\", \"epoch\"]",
+        "vgi.title": "PE Build Timestamp"
+      },
+      "TIMESTAMP",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT pe.main.compile_timestamp((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "metadata"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "compile_timestamp",
+      null,
+      "scalar",
+      "PE build timestamp (TimeDateStamp) of a binary (VARCHAR path); NULL for ELF/Mach-O",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return the PE **build timestamp** (the COFF header `TimeDateStamp`) as a `TIMESTAMP`. This is **PE-only**: ELF and Mach-O have no equivalent header field and return `NULL`, as does any unparseable input. The raw field is a Unix epoch in seconds; the worker scales it to microsecond-precision Arrow timestamp.\n\nUse it for build-provenance and timeline analysis \u2014 bucketing samples by build date, spotting implausible values (the field is attacker-controllable, so a zero, far-future, or suspiciously round timestamp is itself a signal), and correlating related builds. Treat the value as a *claim*, not ground truth.",
+        "vgi.doc_md": "## compile_timestamp\n\nThe PE COFF `TimeDateStamp` as a `TIMESTAMP` (PE only).\n\n### Usage\n\n```sql\nSELECT pe.compile_timestamp('sample.exe');\n```\n\nReturns `NULL` for ELF, Mach-O, and unparseable input. The field is stored as a Unix epoch (seconds) and is **attacker-controllable** \u2014 implausible values (zero, far future, round numbers) are a triage signal, not an error.",
+        "vgi.example_queries": "[{\"description\": \"PE compile timestamp of a binary file\", \"sql\": \"SELECT pe.main.compile_timestamp('test/sql/data/hello.exe')\"}, {\"description\": \"PE compile timestamp of binary bytes\", \"sql\": \"SELECT pe.main.compile_timestamp((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"compile timestamp\", \"build time\", \"TimeDateStamp\", \"PE header\", \"provenance\", \"timeline\", \"metadata\", \"epoch\"]",
+        "vgi.title": "PE Build Timestamp"
+      },
+      "TIMESTAMP",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT pe.main.compile_timestamp('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "metadata"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "entry_point",
+      null,
+      "scalar",
+      "Entry-point virtual address of a binary (BLOB bytes), or NULL",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Return the **entry-point address** of an executable as an unsigned 64-bit integer \u2014 the virtual address at which execution would begin (the PE `AddressOfEntryPoint` rebased to the image base, the ELF/Mach-O entry address). Returns `NULL` for unparseable input. The worker only reports the address; it never transfers control there.\n\nUse it to fingerprint a build, to spot an entry point that lands outside the expected code section (a classic packer/injection tell when correlated with `sections` and `overall_entropy`), or as a join key when clustering related samples.",
+        "vgi.doc_md": "## entry_point\n\nThe virtual address where execution begins, as a `UBIGINT`.\n\n### Usage\n\n```sql\nSELECT pe.entry_point('sample.exe');   -- e.g. 5392\n```\n\nReturns `NULL` when the binary cannot be parsed. Compare against the address ranges from `pe.sections(...)` to check that the entry point falls inside an executable section \u2014 an entry point in a high-entropy or writable section is a common packing/injection signal.",
+        "vgi.example_queries": "[{\"description\": \"Entry-point address of a binary file\", \"sql\": \"SELECT pe.main.entry_point('test/sql/data/hello.exe')\"}, {\"description\": \"Entry-point address of binary bytes\", \"sql\": \"SELECT pe.main.entry_point((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"entry point\", \"entrypoint\", \"AddressOfEntryPoint\", \"start address\", \"OEP\", \"virtual address\", \"structure\"]",
+        "vgi.title": "Entry-Point Address"
+      },
+      "UBIGINT",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22598,
+      [
+        "SELECT pe.main.entry_point((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "entry_point",
+      null,
+      "scalar",
+      "Entry-point virtual address of a binary (VARCHAR path), or NULL",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Return the **entry-point address** of an executable as an unsigned 64-bit integer \u2014 the virtual address at which execution would begin (the PE `AddressOfEntryPoint` rebased to the image base, the ELF/Mach-O entry address). Returns `NULL` for unparseable input. The worker only reports the address; it never transfers control there.\n\nUse it to fingerprint a build, to spot an entry point that lands outside the expected code section (a classic packer/injection tell when correlated with `sections` and `overall_entropy`), or as a join key when clustering related samples.",
+        "vgi.doc_md": "## entry_point\n\nThe virtual address where execution begins, as a `UBIGINT`.\n\n### Usage\n\n```sql\nSELECT pe.entry_point('sample.exe');   -- e.g. 5392\n```\n\nReturns `NULL` when the binary cannot be parsed. Compare against the address ranges from `pe.sections(...)` to check that the entry point falls inside an executable section \u2014 an entry point in a high-entropy or writable section is a common packing/injection signal.",
+        "vgi.example_queries": "[{\"description\": \"Entry-point address of a binary file\", \"sql\": \"SELECT pe.main.entry_point('test/sql/data/hello.exe')\"}, {\"description\": \"Entry-point address of binary bytes\", \"sql\": \"SELECT pe.main.entry_point((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"entry point\", \"entrypoint\", \"AddressOfEntryPoint\", \"start address\", \"OEP\", \"virtual address\", \"structure\"]",
+        "vgi.title": "Entry-Point Address"
+      },
+      "UBIGINT",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22598,
+      [
+        "SELECT pe.main.entry_point('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "exports",
+      null,
+      "table",
+      "Exported symbols (name, address) of a binary (BLOB bytes)",
+      null,
+      {
+        "vgi.category": "symbols",
+        "vgi.doc_llm": "Enumerate the **exported symbols** of a binary, one row per export, as `(name, address)` where `address` is the symbol's address/value (0 when unavailable). Exports are typical of shared libraries (DLLs, `.so`, `.dylib`) and plugin-style modules. Accepts a `VARCHAR` path or a `BLOB`; unparseable input or a binary with no exports yields no rows.\n\nUse it to understand a module's public API surface, to spot a DLL whose exports mimic a legitimate system library (a side-loading / proxying tactic), or to match named exports against known-bad indicators. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## exports\n\nOne row per exported symbol, as `(name, address)`.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `name` | VARCHAR | Exported symbol name. |\n| `address` | UBIGINT | Symbol address/value (0 when unavailable). |\n\n### Notes\n\nMost relevant for shared libraries / plugins; executables often export nothing (no rows). `address` is `0` when the value is unavailable. Exports that impersonate a known system library are a DLL side-loading signal.",
+        "vgi.example_queries": "[{\"description\": \"Exported symbols of a shared binary\", \"sql\": \"SELECT name, address FROM pe.main.exports('test/sql/data/hello_macho') ORDER BY name\"}]",
+        "vgi.keywords": "[\"exports\", \"exported symbols\", \"EAT\", \"DLL\", \"shared library\", \"dylib\", \"so\", \"public API\", \"side-loading\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Exported symbol name.\"}, {\"name\": \"address\", \"type\": \"UBIGINT\", \"description\": \"Symbol address/value (0 when unavailable).\"}]",
+        "vgi.title": "Exported Symbols Table"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22604,
+      [],
+      null,
+      [
+        "pe",
+        "exports"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "exports",
+      null,
+      "table",
+      "Exported symbols (name, address) of a binary (VARCHAR path)",
+      null,
+      {
+        "vgi.category": "symbols",
+        "vgi.doc_llm": "Enumerate the **exported symbols** of a binary, one row per export, as `(name, address)` where `address` is the symbol's address/value (0 when unavailable). Exports are typical of shared libraries (DLLs, `.so`, `.dylib`) and plugin-style modules. Accepts a `VARCHAR` path or a `BLOB`; unparseable input or a binary with no exports yields no rows.\n\nUse it to understand a module's public API surface, to spot a DLL whose exports mimic a legitimate system library (a side-loading / proxying tactic), or to match named exports against known-bad indicators. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## exports\n\nOne row per exported symbol, as `(name, address)`.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `name` | VARCHAR | Exported symbol name. |\n| `address` | UBIGINT | Symbol address/value (0 when unavailable). |\n\n### Notes\n\nMost relevant for shared libraries / plugins; executables often export nothing (no rows). `address` is `0` when the value is unavailable. Exports that impersonate a known system library are a DLL side-loading signal.",
+        "vgi.example_queries": "[{\"description\": \"Exported symbols of a shared binary\", \"sql\": \"SELECT name, address FROM pe.main.exports('test/sql/data/hello_macho') ORDER BY name\"}]",
+        "vgi.keywords": "[\"exports\", \"exported symbols\", \"EAT\", \"DLL\", \"shared library\", \"dylib\", \"so\", \"public API\", \"side-loading\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Exported symbol name.\"}, {\"name\": \"address\", \"type\": \"UBIGINT\", \"description\": \"Symbol address/value (0 when unavailable).\"}]",
+        "vgi.title": "Exported Symbols Table"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22604,
+      [
+        "SELECT name, address FROM pe.main.exports('test/sql/data/hello_macho') ORDER BY name"
+      ],
+      null,
+      [
+        "pe",
+        "exports"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "imphash",
+      null,
+      "scalar",
+      "PE import hash (for clustering) of a binary (BLOB bytes); NULL for ELF/Mach-O",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return the **imphash** (import hash) of a PE: the MD5 over the normalized, ordered list of imported library/function names. It is **PE-only** \u2014 ELF and Mach-O, and any unparseable input, return `NULL`. Two PEs built from the same source/toolchain with the same import table share an imphash even if their bytes differ, which makes it a classic **clustering / family-attribution** key for malware triage.\n\nUse it to `GROUP BY` related samples, to pivot from one known-bad sample to others, or to match against threat-intel imphash blocklists. Caveat: packers and import obfuscation can collapse or mangle the import table, so an imphash is a strong-but-not-definitive link. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## imphash\n\nThe PE import hash \u2014 MD5 of the normalized import table \u2014 as a hex string (PE only).\n\nCall it with one argument (a `VARCHAR` path or a `BLOB`) to get the sample's 32-character hex import hash, or `NULL` for ELF, Mach-O, and unparseable input. Because two PEs built from the same toolchain and import table share an imphash, it is a classic clustering / family-attribution key: group a corpus by this value to bucket related samples. Packing or import obfuscation weakens the signal, so treat a match as a strong hint rather than proof. Ready-to-run example queries are attached to this function.",
+        "vgi.example_queries": "[{\"description\": \"Import hash of a PE file\", \"sql\": \"SELECT pe.main.imphash('test/sql/data/hello.exe')\"}, {\"description\": \"Import hash of PE bytes\", \"sql\": \"SELECT pe.main.imphash((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}, {\"description\": \"Cluster a folder of PE samples by import hash and show each cluster's size, build-time span and member files (non-PE files have no imphash and are skipped; the fixture folder holds a single PE, so it yields one cluster).\", \"sql\": \"SELECT pe.main.imphash(content) AS imphash, count(*) AS samples, min(pe.main.compile_timestamp(content)) AS first_built, max(pe.main.compile_timestamp(content)) AS last_built, list(filename ORDER BY filename) AS files FROM read_blob('test/sql/data/*') WHERE pe.main.imphash(content) IS NOT NULL GROUP BY 1 ORDER BY samples DESC, imphash\"}]",
+        "vgi.keywords": "[\"imphash\", \"import hash\", \"pehash\", \"clustering\", \"family\", \"attribution\", \"malware\", \"fingerprint\", \"MD5\", \"imports\"]",
+        "vgi.title": "PE Import Hash (imphash)"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22599,
+      [
+        "SELECT pe.main.imphash((SELECT content FROM read_blob('test/sql/data/hello.exe')))",
+        "SELECT pe.main.imphash(content) AS imphash, count(*) AS samples, min(pe.main.compile_timestamp(content)) AS first_built, max(pe.main.compile_timestamp(content)) AS last_built, list(filename ORDER BY filename) AS files FROM read_blob('test/sql/data/*') WHERE pe.main.imphash(content) IS NOT NULL GROUP BY 1 ORDER BY samples DESC, imphash"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "clustering"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "imphash",
+      null,
+      "scalar",
+      "PE import hash (for clustering) of a binary (VARCHAR path); NULL for ELF/Mach-O",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return the **imphash** (import hash) of a PE: the MD5 over the normalized, ordered list of imported library/function names. It is **PE-only** \u2014 ELF and Mach-O, and any unparseable input, return `NULL`. Two PEs built from the same source/toolchain with the same import table share an imphash even if their bytes differ, which makes it a classic **clustering / family-attribution** key for malware triage.\n\nUse it to `GROUP BY` related samples, to pivot from one known-bad sample to others, or to match against threat-intel imphash blocklists. Caveat: packers and import obfuscation can collapse or mangle the import table, so an imphash is a strong-but-not-definitive link. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## imphash\n\nThe PE import hash \u2014 MD5 of the normalized import table \u2014 as a hex string (PE only).\n\nCall it with one argument (a `VARCHAR` path or a `BLOB`) to get the sample's 32-character hex import hash, or `NULL` for ELF, Mach-O, and unparseable input. Because two PEs built from the same toolchain and import table share an imphash, it is a classic clustering / family-attribution key: group a corpus by this value to bucket related samples. Packing or import obfuscation weakens the signal, so treat a match as a strong hint rather than proof. Ready-to-run example queries are attached to this function.",
+        "vgi.example_queries": "[{\"description\": \"Import hash of a PE file\", \"sql\": \"SELECT pe.main.imphash('test/sql/data/hello.exe')\"}, {\"description\": \"Import hash of PE bytes\", \"sql\": \"SELECT pe.main.imphash((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}, {\"description\": \"Cluster a folder of PE samples by import hash and show each cluster's size, build-time span and member files (non-PE files have no imphash and are skipped; the fixture folder holds a single PE, so it yields one cluster).\", \"sql\": \"SELECT pe.main.imphash(content) AS imphash, count(*) AS samples, min(pe.main.compile_timestamp(content)) AS first_built, max(pe.main.compile_timestamp(content)) AS last_built, list(filename ORDER BY filename) AS files FROM read_blob('test/sql/data/*') WHERE pe.main.imphash(content) IS NOT NULL GROUP BY 1 ORDER BY samples DESC, imphash\"}]",
+        "vgi.keywords": "[\"imphash\", \"import hash\", \"pehash\", \"clustering\", \"family\", \"attribution\", \"malware\", \"fingerprint\", \"MD5\", \"imports\"]",
+        "vgi.title": "PE Import Hash (imphash)"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22599,
+      [
+        "SELECT pe.main.imphash('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "clustering"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "imports",
+      null,
+      "table",
+      "Imported symbols (library, function) of a binary (BLOB bytes)",
+      null,
+      {
+        "vgi.category": "symbols",
+        "vgi.doc_llm": "Enumerate the **imported symbols** of a binary, one row per import, as `(library, function)`. For PE the `library` is the DLL (e.g. `KERNEL32.dll`) and `function` the imported API, or `ordinal#N` when imported by ordinal; for ELF/Mach-O `library` is empty and `function` is the symbol. Accepts a `VARCHAR` path or a `BLOB`; unparseable input yields no rows.\n\nThe import table is one of the richest behavioral fingerprints of a binary: which APIs it pulls in (networking, crypto, process injection, registry, file I/O) sketches what it *can* do without running it, and the normalized import set underlies `pe.imphash(...)` clustering. Watch for tiny import tables (a packer that resolves APIs at runtime) and for suspicious API combinations. Static read-only.",
+        "vgi.doc_md": "## imports\n\nOne row per imported symbol, as `(library, function)`.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `library` | VARCHAR | Imported library/DLL name (empty for ELF/Mach-O). |\n| `function` | VARCHAR | Imported symbol name, or `ordinal#N` when imported by ordinal. |\n\n### Notes\n\nPE rows carry the DLL in `library` (functions imported by ordinal appear as `ordinal#N`); ELF/Mach-O leave `library` empty. A suspiciously small import table often means runtime API resolution (a packing/evasion signal). Feeds `pe.imphash(...)`.",
+        "vgi.example_queries": "[{\"description\": \"Imported symbols of a binary file\", \"sql\": \"SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') ORDER BY library, function LIMIT 10\"}]",
+        "vgi.keywords": "[\"imports\", \"imported symbols\", \"IAT\", \"DLL\", \"API\", \"dependencies\", \"dynamic symbols\", \"capabilities\", \"behavior\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"library\", \"type\": \"VARCHAR\", \"description\": \"Imported library/DLL name (empty for ELF/Mach-O).\"}, {\"name\": \"function\", \"type\": \"VARCHAR\", \"description\": \"Imported symbol name, or `ordinal#N` when imported by ordinal.\"}]",
+        "vgi.title": "Imported Symbols Table"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22605,
+      [],
+      null,
+      [
+        "pe",
+        "imports"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "imports",
+      null,
+      "table",
+      "Imported symbols (library, function) of a binary (VARCHAR path)",
+      null,
+      {
+        "vgi.category": "symbols",
+        "vgi.doc_llm": "Enumerate the **imported symbols** of a binary, one row per import, as `(library, function)`. For PE the `library` is the DLL (e.g. `KERNEL32.dll`) and `function` the imported API, or `ordinal#N` when imported by ordinal; for ELF/Mach-O `library` is empty and `function` is the symbol. Accepts a `VARCHAR` path or a `BLOB`; unparseable input yields no rows.\n\nThe import table is one of the richest behavioral fingerprints of a binary: which APIs it pulls in (networking, crypto, process injection, registry, file I/O) sketches what it *can* do without running it, and the normalized import set underlies `pe.imphash(...)` clustering. Watch for tiny import tables (a packer that resolves APIs at runtime) and for suspicious API combinations. Static read-only.",
+        "vgi.doc_md": "## imports\n\nOne row per imported symbol, as `(library, function)`.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `library` | VARCHAR | Imported library/DLL name (empty for ELF/Mach-O). |\n| `function` | VARCHAR | Imported symbol name, or `ordinal#N` when imported by ordinal. |\n\n### Notes\n\nPE rows carry the DLL in `library` (functions imported by ordinal appear as `ordinal#N`); ELF/Mach-O leave `library` empty. A suspiciously small import table often means runtime API resolution (a packing/evasion signal). Feeds `pe.imphash(...)`.",
+        "vgi.example_queries": "[{\"description\": \"Imported symbols of a binary file\", \"sql\": \"SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') ORDER BY library, function LIMIT 10\"}]",
+        "vgi.keywords": "[\"imports\", \"imported symbols\", \"IAT\", \"DLL\", \"API\", \"dependencies\", \"dynamic symbols\", \"capabilities\", \"behavior\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"library\", \"type\": \"VARCHAR\", \"description\": \"Imported library/DLL name (empty for ELF/Mach-O).\"}, {\"name\": \"function\", \"type\": \"VARCHAR\", \"description\": \"Imported symbol name, or `ordinal#N` when imported by ordinal.\"}]",
+        "vgi.title": "Imported Symbols Table"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22605,
+      [
+        "SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') ORDER BY library, function LIMIT 10"
+      ],
+      null,
+      [
+        "pe",
+        "imports"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "is_signed",
+      null,
+      "scalar",
+      "True if a binary (BLOB bytes) carries a code signature (PE Authenticode / Mach-O)",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return whether a binary carries an embedded **code signature**: `true`/`false`, or `NULL` for unparseable input. The check is format-aware \u2014 PE Authenticode signatures, Mach-O embedded code signatures \u2014 and ELF, which has no native embedded-signature concept, always reports `false`. A `false` result is a *successful* answer (the file simply isn't signed), not a parse failure.\n\nUse it as a quick trust signal during triage: unsigned system-looking binaries, or binaries that masquerade as signed vendors but report `false`, are worth a closer look. Note: this reports the *presence* of a signature, not whether the signature is valid or trusted. Static read-only check; the binary is never executed.",
+        "vgi.doc_md": "## is_signed\n\nBoolean: does the binary carry an embedded code signature?\n\n### Behavior by format\n\n| format | meaning |\n|---|---|\n| PE | has an Authenticode signature |\n| Mach-O | has an embedded code signature |\n| ELF | always `false` (no native embedded signature) |\n\nReturns `NULL` only for input that cannot be parsed. This reports *presence*, not cryptographic *validity* \u2014 verify the chain separately if trust matters.",
+        "vgi.example_queries": "[{\"description\": \"Whether a binary file is code-signed\", \"sql\": \"SELECT pe.main.is_signed('test/sql/data/hello.exe')\"}, {\"description\": \"Whether binary bytes are code-signed\", \"sql\": \"SELECT pe.main.is_signed((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"signed\", \"signature\", \"code signing\", \"authenticode\", \"codesign\", \"trust\", \"certificate\", \"PE\", \"Mach-O\", \"security\"]",
+        "vgi.title": "Binary Is Code-Signed"
+      },
+      "BOOLEAN",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22600,
+      [
+        "SELECT pe.main.is_signed((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "security"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "is_signed",
+      null,
+      "scalar",
+      "True if a binary (VARCHAR path) carries a code signature (PE Authenticode / Mach-O)",
+      null,
+      {
+        "vgi.category": "signing",
+        "vgi.doc_llm": "Return whether a binary carries an embedded **code signature**: `true`/`false`, or `NULL` for unparseable input. The check is format-aware \u2014 PE Authenticode signatures, Mach-O embedded code signatures \u2014 and ELF, which has no native embedded-signature concept, always reports `false`. A `false` result is a *successful* answer (the file simply isn't signed), not a parse failure.\n\nUse it as a quick trust signal during triage: unsigned system-looking binaries, or binaries that masquerade as signed vendors but report `false`, are worth a closer look. Note: this reports the *presence* of a signature, not whether the signature is valid or trusted. Static read-only check; the binary is never executed.",
+        "vgi.doc_md": "## is_signed\n\nBoolean: does the binary carry an embedded code signature?\n\n### Behavior by format\n\n| format | meaning |\n|---|---|\n| PE | has an Authenticode signature |\n| Mach-O | has an embedded code signature |\n| ELF | always `false` (no native embedded signature) |\n\nReturns `NULL` only for input that cannot be parsed. This reports *presence*, not cryptographic *validity* \u2014 verify the chain separately if trust matters.",
+        "vgi.example_queries": "[{\"description\": \"Whether a binary file is code-signed\", \"sql\": \"SELECT pe.main.is_signed('test/sql/data/hello.exe')\"}, {\"description\": \"Whether binary bytes are code-signed\", \"sql\": \"SELECT pe.main.is_signed((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"signed\", \"signature\", \"code signing\", \"authenticode\", \"codesign\", \"trust\", \"certificate\", \"PE\", \"Mach-O\", \"security\"]",
+        "vgi.title": "Binary Is Code-Signed"
+      },
+      "BOOLEAN",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22600,
+      [
+        "SELECT pe.main.is_signed('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "security"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "machine",
+      null,
+      "scalar",
+      "Architecture of a binary (BLOB bytes), e.g. 'X86_64'/'ARM64', or NULL",
+      null,
+      {
+        "vgi.category": "format",
+        "vgi.doc_llm": "Return the **target CPU architecture** of a binary as a normalized string, e.g. `X86_64`, `I386`, `ARM64`, `ARM`. It reads LIEF's *abstract* architecture so the answer is comparable across PE, ELF, and Mach-O rather than each format's raw machine code. Returns `NULL` for unparseable input.\n\nUse it to filter or partition a corpus by architecture (e.g. find all ARM64 samples), to sanity-check that a sample matches the platform it claims, or to route a sample to the right disassembler. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## machine\n\nThe target CPU architecture as a normalized string (`X86_64`, `I386`, `ARM64`, `ARM`, \u2026).\n\n### Usage\n\n```sql\nSELECT pe.machine('sample.exe');   -- 'X86_64'\n```\n\nUses LIEF's abstract architecture so PE / ELF / Mach-O report on a common scale. Returns `NULL` for input that cannot be parsed.",
+        "vgi.example_queries": "[{\"description\": \"Architecture of a binary file\", \"sql\": \"SELECT pe.main.machine('test/sql/data/hello.exe')\"}, {\"description\": \"Architecture of binary bytes\", \"sql\": \"SELECT pe.main.machine((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"machine\", \"architecture\", \"arch\", \"cpu\", \"x86\", \"x86_64\", \"amd64\", \"i386\", \"arm\", \"arm64\", \"aarch64\", \"ISA\", \"structure\"]",
+        "vgi.title": "Target Architecture"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22601,
+      [
+        "SELECT pe.main.machine((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "machine",
+      null,
+      "scalar",
+      "Architecture of a binary (VARCHAR path), e.g. 'X86_64'/'ARM64', or NULL",
+      null,
+      {
+        "vgi.category": "format",
+        "vgi.doc_llm": "Return the **target CPU architecture** of a binary as a normalized string, e.g. `X86_64`, `I386`, `ARM64`, `ARM`. It reads LIEF's *abstract* architecture so the answer is comparable across PE, ELF, and Mach-O rather than each format's raw machine code. Returns `NULL` for unparseable input.\n\nUse it to filter or partition a corpus by architecture (e.g. find all ARM64 samples), to sanity-check that a sample matches the platform it claims, or to route a sample to the right disassembler. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## machine\n\nThe target CPU architecture as a normalized string (`X86_64`, `I386`, `ARM64`, `ARM`, \u2026).\n\n### Usage\n\n```sql\nSELECT pe.machine('sample.exe');   -- 'X86_64'\n```\n\nUses LIEF's abstract architecture so PE / ELF / Mach-O report on a common scale. Returns `NULL` for input that cannot be parsed.",
+        "vgi.example_queries": "[{\"description\": \"Architecture of a binary file\", \"sql\": \"SELECT pe.main.machine('test/sql/data/hello.exe')\"}, {\"description\": \"Architecture of binary bytes\", \"sql\": \"SELECT pe.main.machine((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"machine\", \"architecture\", \"arch\", \"cpu\", \"x86\", \"x86_64\", \"amd64\", \"i386\", \"arm\", \"arm64\", \"aarch64\", \"ISA\", \"structure\"]",
+        "vgi.title": "Target Architecture"
+      },
+      "VARCHAR",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22601,
+      [
+        "SELECT pe.main.machine('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "overall_entropy",
+      null,
+      "scalar",
+      "Shannon entropy (bits/byte, 0-8) of a binary (BLOB bytes); high => packed/encrypted",
+      null,
+      {
+        "vgi.category": "entropy",
+        "vgi.doc_llm": "Return the **Shannon entropy** of the entire file as a `DOUBLE` in bits-per-byte on a `0.0`\u2013`8.0` scale. It is computed over the raw file bytes (independent of the section layout), so it works even when LIEF can't fully resolve the structure \u2014 but it still returns `NULL` for NULL or non-binary input so a random text blob isn't given a misleading number.\n\nHigh whole-file entropy (typically `> ~7.0`) is the single strongest cheap signal of **packing, compression, or encryption**: most native code sits around `5.5`\u2013`6.5`, while packed/encrypted payloads push toward `8.0`. Use it as a first-pass triage filter, then drill into per-section entropy via `pe.sections(...)`. Static read-only.",
+        "vgi.doc_md": "## overall_entropy\n\nWhole-file Shannon entropy as a `DOUBLE`, in bits/byte on a `0`\u2013`8` scale.\n\n### Interpreting the value\n\n| range | typical meaning |\n|---|---|\n| ~5.5\u20136.5 | ordinary native code/data |\n| > ~7.0 | likely packed, compressed, or encrypted |\n\nComputed over raw bytes (independent of section layout). Returns `NULL` for non-binary input. For where the high entropy lives, see per-section entropy in `pe.sections(...)`.",
+        "vgi.example_queries": "[{\"description\": \"Overall entropy of a binary file\", \"sql\": \"SELECT pe.main.overall_entropy('test/sql/data/hello.exe')\"}, {\"description\": \"Overall entropy of binary bytes\", \"sql\": \"SELECT pe.main.overall_entropy((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"entropy\", \"shannon\", \"packing\", \"packed\", \"compressed\", \"encrypted\", \"obfuscation\", \"randomness\", \"triage\"]",
+        "vgi.title": "Whole-File Shannon Entropy"
+      },
+      "DOUBLE",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22602,
+      [
+        "SELECT pe.main.overall_entropy((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "entropy"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "overall_entropy",
+      null,
+      "scalar",
+      "Shannon entropy (bits/byte, 0-8) of a binary (VARCHAR path); high => packed/encrypted",
+      null,
+      {
+        "vgi.category": "entropy",
+        "vgi.doc_llm": "Return the **Shannon entropy** of the entire file as a `DOUBLE` in bits-per-byte on a `0.0`\u2013`8.0` scale. It is computed over the raw file bytes (independent of the section layout), so it works even when LIEF can't fully resolve the structure \u2014 but it still returns `NULL` for NULL or non-binary input so a random text blob isn't given a misleading number.\n\nHigh whole-file entropy (typically `> ~7.0`) is the single strongest cheap signal of **packing, compression, or encryption**: most native code sits around `5.5`\u2013`6.5`, while packed/encrypted payloads push toward `8.0`. Use it as a first-pass triage filter, then drill into per-section entropy via `pe.sections(...)`. Static read-only.",
+        "vgi.doc_md": "## overall_entropy\n\nWhole-file Shannon entropy as a `DOUBLE`, in bits/byte on a `0`\u2013`8` scale.\n\n### Interpreting the value\n\n| range | typical meaning |\n|---|---|\n| ~5.5\u20136.5 | ordinary native code/data |\n| > ~7.0 | likely packed, compressed, or encrypted |\n\nComputed over raw bytes (independent of section layout). Returns `NULL` for non-binary input. For where the high entropy lives, see per-section entropy in `pe.sections(...)`.",
+        "vgi.example_queries": "[{\"description\": \"Overall entropy of a binary file\", \"sql\": \"SELECT pe.main.overall_entropy('test/sql/data/hello.exe')\"}, {\"description\": \"Overall entropy of binary bytes\", \"sql\": \"SELECT pe.main.overall_entropy((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"entropy\", \"shannon\", \"packing\", \"packed\", \"compressed\", \"encrypted\", \"obfuscation\", \"randomness\", \"triage\"]",
+        "vgi.title": "Whole-File Shannon Entropy"
+      },
+      "DOUBLE",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22602,
+      [
+        "SELECT pe.main.overall_entropy('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "entropy"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "section_count",
+      null,
+      "scalar",
+      "Number of sections in a binary (BLOB bytes), or NULL",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Return the **number of sections** in a binary as an integer (PE sections, ELF sections, Mach-O sections across segments). Returns `NULL` for unparseable input.\n\nA scalar summary of what `pe.sections(...)` enumerates row-by-row. Use it as a cheap anomaly signal: an unusually low count (e.g. a single giant section) or an unusually high one can indicate packing, a manually crafted file, or an unusual toolchain. Pair it with `overall_entropy` for a quick packed-vs-clean heuristic. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## section_count\n\nThe number of sections in the binary, as an integer.\n\n### Usage\n\n```sql\nSELECT pe.section_count('sample.exe');\n```\n\nReturns `NULL` for input that cannot be parsed. This is the scalar summary of `pe.sections(...)`; very low or very high counts are mild packing/obfuscation signals.",
+        "vgi.example_queries": "[{\"description\": \"Section count of a binary file\", \"sql\": \"SELECT pe.main.section_count('test/sql/data/hello.exe')\"}, {\"description\": \"Section count of binary bytes\", \"sql\": \"SELECT pe.main.section_count((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"section count\", \"sections\", \"number of sections\", \"segments\", \"layout\", \"structure\", \"count\"]",
+        "vgi.title": "Number of Sections"
+      },
+      "INTEGER",
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22603,
+      [
+        "SELECT pe.main.section_count((SELECT content FROM read_blob('test/sql/data/hello.exe')))"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "section_count",
+      null,
+      "scalar",
+      "Number of sections in a binary (VARCHAR path), or NULL",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Return the **number of sections** in a binary as an integer (PE sections, ELF sections, Mach-O sections across segments). Returns `NULL` for unparseable input.\n\nA scalar summary of what `pe.sections(...)` enumerates row-by-row. Use it as a cheap anomaly signal: an unusually low count (e.g. a single giant section) or an unusually high one can indicate packing, a manually crafted file, or an unusual toolchain. Pair it with `overall_entropy` for a quick packed-vs-clean heuristic. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## section_count\n\nThe number of sections in the binary, as an integer.\n\n### Usage\n\n```sql\nSELECT pe.section_count('sample.exe');\n```\n\nReturns `NULL` for input that cannot be parsed. This is the scalar summary of `pe.sections(...)`; very low or very high counts are mild packing/obfuscation signals.",
+        "vgi.example_queries": "[{\"description\": \"Section count of a binary file\", \"sql\": \"SELECT pe.main.section_count('test/sql/data/hello.exe')\"}, {\"description\": \"Section count of binary bytes\", \"sql\": \"SELECT pe.main.section_count((SELECT content FROM read_blob('test/sql/data/hello.exe')))\"}]",
+        "vgi.keywords": "[\"section count\", \"sections\", \"number of sections\", \"segments\", \"layout\", \"structure\", \"count\"]",
+        "vgi.title": "Number of Sections"
+      },
+      "INTEGER",
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22603,
+      [
+        "SELECT pe.main.section_count('test/sql/data/hello.exe')"
+      ],
+      "CONSISTENT",
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "sections",
+      null,
+      "table",
+      "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (BLOB bytes)",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Enumerate the **sections** of a binary, one row per section, with size and **per-section Shannon entropy** \u2014 the workhorse table for layout-level triage. Columns: `name`, `virtual_size`, `raw_size`, `entropy` (0\u20138), `characteristics` (PE flags; empty for ELF/Mach-O). Accepts a `VARCHAR` path or a `BLOB`; unparseable or non-binary input yields **no rows** (never an error).\n\nUse it to find *where* in a file suspicious data lives: a high-entropy (`> ~7`) `.text`/code section, an executable+writable section, or a section whose raw size dwarfs its virtual size all point to packing, embedded payloads, or self-modifying code. Cross-reference with `pe.entry_point(...)` to confirm the entry point lands in a sane section. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## sections\n\nOne row per section of the binary, with sizes and per-section entropy.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `name` | VARCHAR | Section name (e.g. `.text`, `.data`, `__TEXT`). |\n| `virtual_size` | BIGINT | Size in bytes when mapped into memory. |\n| `raw_size` | BIGINT | Size in bytes on disk. |\n| `entropy` | DOUBLE | Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption. |\n| `characteristics` | VARCHAR | Comma-joined section flags (PE only; empty for ELF/Mach-O). |\n\n### Notes\n\n`characteristics` is populated for PE only. High `entropy` (`> ~7`) localizes packing/encryption to a specific section; a large `raw_size`-vs-`virtual_size` gap or an entry point outside an executable section are further packing signals. Unparseable input returns no rows.",
+        "vgi.example_queries": "[{\"description\": \"Top sections by entropy (a packing signal)\", \"sql\": \"SELECT name, virtual_size, raw_size, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 5\"}, {\"description\": \"Localize the densest content of a sample: the sections whose entropy exceeds the file's own whole-file entropy (for hello.exe, `.text` and the `/19` debug section at ~5.9-6.0 bits/byte against a 5.44 baseline).\", \"sql\": \"WITH baseline AS (SELECT pe.main.overall_entropy('test/sql/data/hello.exe') AS file_entropy) SELECT s.name, round(s.entropy, 3) AS entropy, round(b.file_entropy, 3) AS file_entropy FROM pe.main.sections('test/sql/data/hello.exe') AS s, baseline AS b WHERE s.entropy > b.file_entropy ORDER BY s.entropy DESC\"}]",
+        "vgi.executable_examples": "[{\"description\": \"List the sections of a PE with their per-section entropy.\", \"sql\": \"SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 5\"}, {\"description\": \"Flag high-entropy sections (a packing/encryption signal).\", \"sql\": \"SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') WHERE entropy > 6\"}, {\"description\": \"Localize the densest content of a sample: the sections whose entropy exceeds the file's own whole-file entropy (for hello.exe, `.text` and the `/19` debug section at ~5.9-6.0 bits/byte against a 5.44 baseline).\", \"sql\": \"WITH baseline AS (SELECT pe.main.overall_entropy('test/sql/data/hello.exe') AS file_entropy) SELECT s.name, round(s.entropy, 3) AS entropy, round(b.file_entropy, 3) AS file_entropy FROM pe.main.sections('test/sql/data/hello.exe') AS s, baseline AS b WHERE s.entropy > b.file_entropy ORDER BY s.entropy DESC\"}, {\"description\": \"Count the imported symbols of a PE.\", \"sql\": \"SELECT count(*) AS imports FROM pe.main.imports('test/sql/data/hello.exe')\"}, {\"description\": \"List exported symbols of a Mach-O binary.\", \"sql\": \"SELECT name, address FROM pe.main.exports('test/sql/data/hello_macho') ORDER BY name\"}, {\"description\": \"Extract long printable strings from a binary.\", \"sql\": \"SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) ORDER BY seq LIMIT 5\"}]",
+        "vgi.keywords": "[\"sections\", \"segments\", \"layout\", \"entropy\", \"packing\", \".text\", \".data\", \"characteristics\", \"flags\", \"structure\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Section name (e.g. `.text`, `.data`, `__TEXT`).\"}, {\"name\": \"virtual_size\", \"type\": \"BIGINT\", \"description\": \"Size in bytes when mapped into memory.\"}, {\"name\": \"raw_size\", \"type\": \"BIGINT\", \"description\": \"Size in bytes on disk.\"}, {\"name\": \"entropy\", \"type\": \"DOUBLE\", \"description\": \"Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption.\"}, {\"name\": \"characteristics\", \"type\": \"VARCHAR\", \"description\": \"Comma-joined section flags (PE only; empty for ELF/Mach-O).\"}]",
+        "vgi.title": "Per-Section Layout & Entropy"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22606,
+      [],
+      null,
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "sections",
+      null,
+      "table",
+      "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (VARCHAR path)",
+      null,
+      {
+        "vgi.category": "structure",
+        "vgi.doc_llm": "Enumerate the **sections** of a binary, one row per section, with size and **per-section Shannon entropy** \u2014 the workhorse table for layout-level triage. Columns: `name`, `virtual_size`, `raw_size`, `entropy` (0\u20138), `characteristics` (PE flags; empty for ELF/Mach-O). Accepts a `VARCHAR` path or a `BLOB`; unparseable or non-binary input yields **no rows** (never an error).\n\nUse it to find *where* in a file suspicious data lives: a high-entropy (`> ~7`) `.text`/code section, an executable+writable section, or a section whose raw size dwarfs its virtual size all point to packing, embedded payloads, or self-modifying code. Cross-reference with `pe.entry_point(...)` to confirm the entry point lands in a sane section. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## sections\n\nOne row per section of the binary, with sizes and per-section entropy.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `name` | VARCHAR | Section name (e.g. `.text`, `.data`, `__TEXT`). |\n| `virtual_size` | BIGINT | Size in bytes when mapped into memory. |\n| `raw_size` | BIGINT | Size in bytes on disk. |\n| `entropy` | DOUBLE | Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption. |\n| `characteristics` | VARCHAR | Comma-joined section flags (PE only; empty for ELF/Mach-O). |\n\n### Notes\n\n`characteristics` is populated for PE only. High `entropy` (`> ~7`) localizes packing/encryption to a specific section; a large `raw_size`-vs-`virtual_size` gap or an entry point outside an executable section are further packing signals. Unparseable input returns no rows.",
+        "vgi.example_queries": "[{\"description\": \"Top sections by entropy (a packing signal)\", \"sql\": \"SELECT name, virtual_size, raw_size, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 5\"}, {\"description\": \"Localize the densest content of a sample: the sections whose entropy exceeds the file's own whole-file entropy (for hello.exe, `.text` and the `/19` debug section at ~5.9-6.0 bits/byte against a 5.44 baseline).\", \"sql\": \"WITH baseline AS (SELECT pe.main.overall_entropy('test/sql/data/hello.exe') AS file_entropy) SELECT s.name, round(s.entropy, 3) AS entropy, round(b.file_entropy, 3) AS file_entropy FROM pe.main.sections('test/sql/data/hello.exe') AS s, baseline AS b WHERE s.entropy > b.file_entropy ORDER BY s.entropy DESC\"}]",
+        "vgi.executable_examples": "[{\"description\": \"List the sections of a PE with their per-section entropy.\", \"sql\": \"SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 5\"}, {\"description\": \"Flag high-entropy sections (a packing/encryption signal).\", \"sql\": \"SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') WHERE entropy > 6\"}, {\"description\": \"Localize the densest content of a sample: the sections whose entropy exceeds the file's own whole-file entropy (for hello.exe, `.text` and the `/19` debug section at ~5.9-6.0 bits/byte against a 5.44 baseline).\", \"sql\": \"WITH baseline AS (SELECT pe.main.overall_entropy('test/sql/data/hello.exe') AS file_entropy) SELECT s.name, round(s.entropy, 3) AS entropy, round(b.file_entropy, 3) AS file_entropy FROM pe.main.sections('test/sql/data/hello.exe') AS s, baseline AS b WHERE s.entropy > b.file_entropy ORDER BY s.entropy DESC\"}, {\"description\": \"Count the imported symbols of a PE.\", \"sql\": \"SELECT count(*) AS imports FROM pe.main.imports('test/sql/data/hello.exe')\"}, {\"description\": \"List exported symbols of a Mach-O binary.\", \"sql\": \"SELECT name, address FROM pe.main.exports('test/sql/data/hello_macho') ORDER BY name\"}, {\"description\": \"Extract long printable strings from a binary.\", \"sql\": \"SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) ORDER BY seq LIMIT 5\"}]",
+        "vgi.keywords": "[\"sections\", \"segments\", \"layout\", \"entropy\", \"packing\", \".text\", \".data\", \"characteristics\", \"flags\", \"structure\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Section name (e.g. `.text`, `.data`, `__TEXT`).\"}, {\"name\": \"virtual_size\", \"type\": \"BIGINT\", \"description\": \"Size in bytes when mapped into memory.\"}, {\"name\": \"raw_size\", \"type\": \"BIGINT\", \"description\": \"Size in bytes on disk.\"}, {\"name\": \"entropy\", \"type\": \"DOUBLE\", \"description\": \"Per-section Shannon entropy (0-8); high (>~7) suggests packing/encryption.\"}, {\"name\": \"characteristics\", \"type\": \"VARCHAR\", \"description\": \"Comma-joined section flags (PE only; empty for ELF/Mach-O).\"}]",
+        "vgi.title": "Per-Section Layout & Entropy"
+      },
+      null,
+      [
+        "binary"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22606,
+      [
+        "SELECT name, virtual_size, raw_size, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC LIMIT 5",
+        "WITH baseline AS (SELECT pe.main.overall_entropy('test/sql/data/hello.exe') AS file_entropy) SELECT s.name, round(s.entropy, 3) AS entropy, round(b.file_entropy, 3) AS file_entropy FROM pe.main.sections('test/sql/data/hello.exe') AS s, baseline AS b WHERE s.entropy > b.file_entropy ORDER BY s.entropy DESC"
+      ],
+      null,
+      [
+        "pe",
+        "structure"
+      ]
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "strings",
+      null,
+      "table",
+      null,
+      null,
+      {
+        "vgi.category": "strings",
+        "vgi.doc_llm": "Extract **printable strings** from a binary, one row per string, as `(seq, value)` in file order. It recovers both ASCII and UTF-16LE runs at least `min_len` characters long (`min_len` defaults to 5 and is passed as the named argument `min_len :=`). Accepts a `VARCHAR` path or a `BLOB`; output is capped for safety against string-bomb input, and unparseable input yields no rows.\n\nStrings are the fastest way to surface human-readable indicators inside an opaque binary: URLs, IP addresses, file paths, registry keys, command lines, mutex names, embedded error messages, and crypto constants. Filter `value` with SQL `LIKE`/regex to hunt for IOCs across a corpus. Raise `min_len` to cut noise from packed samples. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## strings\n\nOne row per printable string (ASCII + UTF-16LE) of length `>= min_len`.\n\n### Arguments\n\n- `binary` \u2014 a `VARCHAR` path or a `BLOB`.\n- `min_len` (named, default 5) \u2014 minimum string length to report.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `seq` | BIGINT | 1-based ordinal of the string in file order. |\n| `value` | VARCHAR | Printable ASCII/UTF-16 string (length >= `min_len`). |\n\n### Notes\n\nOutput is bounded against string-bomb inputs. Use `WHERE value LIKE '%http%'` (and friends) to hunt URLs, paths, registry keys, and other IOCs; raise `min_len` to reduce noise on packed samples.",
+        "vgi.example_queries": "[{\"description\": \"Printable strings of a binary file\", \"sql\": \"SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe') ORDER BY seq LIMIT 10\"}, {\"description\": \"How many strings are at least 8 chars long\", \"sql\": \"SELECT count(*) AS long_strings FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)\"}, {\"description\": \"Extract printable strings from raw BLOB bytes (no file needed)\", \"sql\": \"SELECT seq, value FROM pe.main.strings('demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) ORDER BY seq\"}]",
+        "vgi.keywords": "[\"strings\", \"printable\", \"ascii\", \"utf-16\", \"IOC\", \"indicators\", \"URLs\", \"paths\", \"extract\", \"grep\", \"hunting\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"seq\", \"type\": \"BIGINT\", \"description\": \"1-based ordinal of the string in file order.\"}, {\"name\": \"value\", \"type\": \"VARCHAR\", \"description\": \"Printable ASCII/UTF-16 string (length >= `min_len`).\"}]",
+        "vgi.title": "Printable Strings Extractor"
+      },
+      null,
+      [
+        "binary",
+        "min_len"
+      ],
+      [
+        "BLOB",
+        "INTEGER"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22607,
+      [],
+      null,
+      []
+    ],
+    [
+      "pe",
+      "22592",
+      "main",
+      "strings",
+      null,
+      "table",
+      null,
+      null,
+      {
+        "vgi.category": "strings",
+        "vgi.doc_llm": "Extract **printable strings** from a binary, one row per string, as `(seq, value)` in file order. It recovers both ASCII and UTF-16LE runs at least `min_len` characters long (`min_len` defaults to 5 and is passed as the named argument `min_len :=`). Accepts a `VARCHAR` path or a `BLOB`; output is capped for safety against string-bomb input, and unparseable input yields no rows.\n\nStrings are the fastest way to surface human-readable indicators inside an opaque binary: URLs, IP addresses, file paths, registry keys, command lines, mutex names, embedded error messages, and crypto constants. Filter `value` with SQL `LIKE`/regex to hunt for IOCs across a corpus. Raise `min_len` to cut noise from packed samples. Static read-only; the binary is never executed.",
+        "vgi.doc_md": "## strings\n\nOne row per printable string (ASCII + UTF-16LE) of length `>= min_len`.\n\n### Arguments\n\n- `binary` \u2014 a `VARCHAR` path or a `BLOB`.\n- `min_len` (named, default 5) \u2014 minimum string length to report.\n\n### Returns\n\n| column | type | description |\n|---|---|---|\n| `seq` | BIGINT | 1-based ordinal of the string in file order. |\n| `value` | VARCHAR | Printable ASCII/UTF-16 string (length >= `min_len`). |\n\n### Notes\n\nOutput is bounded against string-bomb inputs. Use `WHERE value LIKE '%http%'` (and friends) to hunt URLs, paths, registry keys, and other IOCs; raise `min_len` to reduce noise on packed samples.",
+        "vgi.example_queries": "[{\"description\": \"Printable strings of a binary file\", \"sql\": \"SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe') ORDER BY seq LIMIT 10\"}, {\"description\": \"How many strings are at least 8 chars long\", \"sql\": \"SELECT count(*) AS long_strings FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8)\"}, {\"description\": \"Extract printable strings from raw BLOB bytes (no file needed)\", \"sql\": \"SELECT seq, value FROM pe.main.strings('demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) ORDER BY seq\"}]",
+        "vgi.keywords": "[\"strings\", \"printable\", \"ascii\", \"utf-16\", \"IOC\", \"indicators\", \"URLs\", \"paths\", \"extract\", \"grep\", \"hunting\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"seq\", \"type\": \"BIGINT\", \"description\": \"1-based ordinal of the string in file order.\"}, {\"name\": \"value\", \"type\": \"VARCHAR\", \"description\": \"Printable ASCII/UTF-16 string (length >= `min_len`).\"}]",
+        "vgi.title": "Printable Strings Extractor"
+      },
+      null,
+      [
+        "binary",
+        "min_len"
+      ],
+      [
+        "VARCHAR",
+        "INTEGER"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22607,
+      [],
+      null,
+      []
+    ]
+  ]
+}
