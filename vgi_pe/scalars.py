@@ -39,17 +39,15 @@ from vgi.scalar_function import ScalarFunction
 
 from . import core, meta
 from .core import BinarySource
-from .examples import CORPUS_TRIAGE, IMPHASH_CLUSTERS
+from .examples import CORPUS_TRIAGE, ELF_BLOB, IMPHASH_CLUSTERS, MACHO_BLOB, PE_BLOB
 
-# A real, committed PE fixture the worker can open by relative path (the worker's
-# cwd is the repo root). Used so per-function examples actually EXECUTE and
-# return data under the strict linter (it runs every example by default).
-_PE_FIXTURE = "test/sql/data/hello.exe"
-_ELF_FIXTURE = "test/sql/data/hello_elf"
-
-# Build a BLOB of the same fixture inline so the BLOB-overload examples are
-# self-contained and runnable (DuckDB's `read_blob` returns the file bytes).
-_PE_BLOB = f"(SELECT content FROM read_blob('{_PE_FIXTURE}'))"
+# Committed fixtures (test/sql/data/) fetched DuckDB-side over HTTPS from a pinned
+# release tag and handed to the BLOB overloads, so every example runs for any
+# user with an attached worker (no repo checkout). The VARCHAR-path overloads
+# share these examples: a path names a file on the caller's own machine.
+_PE_BLOB = PE_BLOB
+_ELF_BLOB = ELF_BLOB
+_MACHO_BLOB = MACHO_BLOB
 
 # ---------------------------------------------------------------------------
 # Mapping helpers: apply a pure ``BinarySource -> X`` function across an input
@@ -112,10 +110,13 @@ _BINARY_FORMAT_TAGS = meta.object_tags(
     relative_path="vgi_pe/scalars.py",
     examples=[
         {
-            "description": "Detect the executable format of a file",
-            "sql": f"SELECT pe.main.binary_format('{_PE_FIXTURE}')",
+            "description": "Detect the executable format of a Linux ELF sample (returns 'ELF')",
+            "sql": f"SELECT pe.main.binary_format({_ELF_BLOB})",
         },
-        {"description": "Detect the executable format of bytes", "sql": f"SELECT pe.main.binary_format({_PE_BLOB})"},
+        {
+            "description": "Detect the executable format of a Windows PE sample's bytes",
+            "sql": f"SELECT pe.main.binary_format({_PE_BLOB})",
+        },
         CORPUS_TRIAGE,
     ],
 )
@@ -133,8 +134,8 @@ class BinaryFormatPathFunction(ScalarFunction):
         tags = _BINARY_FORMAT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.binary_format('{_PE_FIXTURE}')",
-                description="Detect the executable format of a file",
+                sql=f"SELECT pe.main.binary_format({_ELF_BLOB})",
+                description="Detect the executable format of a Linux ELF sample (returns 'ELF')",
             ),
         ]
 
@@ -159,7 +160,7 @@ class BinaryFormatBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.binary_format({_PE_BLOB})",
-                description="Detect the executable format of bytes",
+                description="Detect the executable format of a Windows PE sample's bytes",
             ),
             FunctionExample(sql=CORPUS_TRIAGE["sql"], description=CORPUS_TRIAGE["description"]),
         ]
@@ -205,8 +206,14 @@ _IS_SIGNED_TAGS = meta.object_tags(
     category="signing",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Whether a binary file is code-signed", "sql": f"SELECT pe.main.is_signed('{_PE_FIXTURE}')"},
-        {"description": "Whether binary bytes are code-signed", "sql": f"SELECT pe.main.is_signed({_PE_BLOB})"},
+        {
+            "description": "Whether a macOS Mach-O sample is code-signed (true: it carries an ad-hoc signature)",
+            "sql": f"SELECT pe.main.is_signed({_MACHO_BLOB})",
+        },
+        {
+            "description": "Whether a Windows PE sample is code-signed (false: it has no Authenticode signature)",
+            "sql": f"SELECT pe.main.is_signed({_PE_BLOB})",
+        },
     ],
 )
 
@@ -223,8 +230,8 @@ class IsSignedPathFunction(ScalarFunction):
         tags = _IS_SIGNED_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.is_signed('{_PE_FIXTURE}')",
-                description="Whether a binary file is code-signed",
+                sql=f"SELECT pe.main.is_signed({_MACHO_BLOB})",
+                description="Whether a macOS Mach-O sample is code-signed (true: it carries an ad-hoc signature)",
             ),
         ]
 
@@ -249,7 +256,7 @@ class IsSignedBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.is_signed({_PE_BLOB})",
-                description="Whether binary bytes are code-signed",
+                description="Whether a Windows PE sample is code-signed (false: it has no Authenticode signature)",
             ),
         ]
 
@@ -291,8 +298,8 @@ _ENTRY_POINT_TAGS = meta.object_tags(
     category="structure",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Entry-point address of a binary file", "sql": f"SELECT pe.main.entry_point('{_PE_FIXTURE}')"},
-        {"description": "Entry-point address of binary bytes", "sql": f"SELECT pe.main.entry_point({_PE_BLOB})"},
+        {"description": "Entry-point address of a Linux ELF sample", "sql": f"SELECT pe.main.entry_point({_ELF_BLOB})"},
+        {"description": "Entry-point address of a Windows PE sample", "sql": f"SELECT pe.main.entry_point({_PE_BLOB})"},
     ],
 )
 
@@ -309,8 +316,8 @@ class EntryPointPathFunction(ScalarFunction):
         tags = _ENTRY_POINT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.entry_point('{_PE_FIXTURE}')",
-                description="Entry-point address of a binary file",
+                sql=f"SELECT pe.main.entry_point({_ELF_BLOB})",
+                description="Entry-point address of a Linux ELF sample",
             ),
         ]
 
@@ -335,7 +342,7 @@ class EntryPointBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.entry_point({_PE_BLOB})",
-                description="Entry-point address of binary bytes",
+                description="Entry-point address of a Windows PE sample",
             ),
         ]
 
@@ -377,8 +384,11 @@ _MACHINE_TAGS = meta.object_tags(
     category="format",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Architecture of a binary file", "sql": f"SELECT pe.main.machine('{_PE_FIXTURE}')"},
-        {"description": "Architecture of binary bytes", "sql": f"SELECT pe.main.machine({_PE_BLOB})"},
+        {
+            "description": "Architecture of a macOS Mach-O sample (returns 'ARM64')",
+            "sql": f"SELECT pe.main.machine({_MACHO_BLOB})",
+        },
+        {"description": "Architecture of a Windows PE sample", "sql": f"SELECT pe.main.machine({_PE_BLOB})"},
     ],
 )
 
@@ -395,8 +405,8 @@ class MachinePathFunction(ScalarFunction):
         tags = _MACHINE_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.machine('{_PE_FIXTURE}')",
-                description="Architecture of a binary file",
+                sql=f"SELECT pe.main.machine({_MACHO_BLOB})",
+                description="Architecture of a macOS Mach-O sample (returns 'ARM64')",
             ),
         ]
 
@@ -421,7 +431,7 @@ class MachineBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.machine({_PE_BLOB})",
-                description="Architecture of binary bytes",
+                description="Architecture of a Windows PE sample",
             ),
         ]
 
@@ -481,11 +491,11 @@ _COMPILE_TIMESTAMP_TAGS = meta.object_tags(
     relative_path="vgi_pe/scalars.py",
     examples=[
         {
-            "description": "PE compile timestamp of a binary file",
-            "sql": f"SELECT pe.main.compile_timestamp('{_PE_FIXTURE}')",
+            "description": "Build year of a Windows PE sample, from its compile timestamp",
+            "sql": f"SELECT year(pe.main.compile_timestamp({_PE_BLOB})) AS build_year",
         },
         {
-            "description": "PE compile timestamp of binary bytes",
+            "description": "PE compile timestamp of a Windows PE sample",
             "sql": f"SELECT pe.main.compile_timestamp({_PE_BLOB})",
         },
     ],
@@ -504,8 +514,8 @@ class CompileTimestampPathFunction(ScalarFunction):
         tags = _COMPILE_TIMESTAMP_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.compile_timestamp('{_PE_FIXTURE}')",
-                description="PE compile timestamp of a binary file",
+                sql=f"SELECT year(pe.main.compile_timestamp({_PE_BLOB})) AS build_year",
+                description="Build year of a Windows PE sample, from its compile timestamp",
             ),
         ]
 
@@ -530,7 +540,7 @@ class CompileTimestampBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.compile_timestamp({_PE_BLOB})",
-                description="PE compile timestamp of binary bytes",
+                description="PE compile timestamp of a Windows PE sample",
             ),
         ]
 
@@ -572,8 +582,8 @@ _SECTION_COUNT_TAGS = meta.object_tags(
     category="structure",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Section count of a binary file", "sql": f"SELECT pe.main.section_count('{_PE_FIXTURE}')"},
-        {"description": "Section count of binary bytes", "sql": f"SELECT pe.main.section_count({_PE_BLOB})"},
+        {"description": "Section count of a Linux ELF sample", "sql": f"SELECT pe.main.section_count({_ELF_BLOB})"},
+        {"description": "Section count of a Windows PE sample", "sql": f"SELECT pe.main.section_count({_PE_BLOB})"},
     ],
 )
 
@@ -590,8 +600,8 @@ class SectionCountPathFunction(ScalarFunction):
         tags = _SECTION_COUNT_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.section_count('{_PE_FIXTURE}')",
-                description="Section count of a binary file",
+                sql=f"SELECT pe.main.section_count({_ELF_BLOB})",
+                description="Section count of a Linux ELF sample",
             ),
         ]
 
@@ -616,7 +626,7 @@ class SectionCountBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.section_count({_PE_BLOB})",
-                description="Section count of binary bytes",
+                description="Section count of a Windows PE sample",
             ),
         ]
 
@@ -661,8 +671,14 @@ _OVERALL_ENTROPY_TAGS = meta.object_tags(
     category="entropy",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Overall entropy of a binary file", "sql": f"SELECT pe.main.overall_entropy('{_PE_FIXTURE}')"},
-        {"description": "Overall entropy of binary bytes", "sql": f"SELECT pe.main.overall_entropy({_PE_BLOB})"},
+        {
+            "description": "Whole-file entropy of a mostly zero-padded Mach-O sample (a low value, about 0.34)",
+            "sql": f"SELECT round(pe.main.overall_entropy({_MACHO_BLOB}), 2) AS file_entropy",
+        },
+        {
+            "description": "Whole-file entropy of a Windows PE sample",
+            "sql": f"SELECT pe.main.overall_entropy({_PE_BLOB})",
+        },
     ],
 )
 
@@ -679,8 +695,8 @@ class OverallEntropyPathFunction(ScalarFunction):
         tags = _OVERALL_ENTROPY_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.overall_entropy('{_PE_FIXTURE}')",
-                description="Overall entropy of a binary file",
+                sql=f"SELECT round(pe.main.overall_entropy({_MACHO_BLOB}), 2) AS file_entropy",
+                description="Whole-file entropy of a mostly zero-padded Mach-O sample (a low value, about 0.34)",
             ),
         ]
 
@@ -705,7 +721,7 @@ class OverallEntropyBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.overall_entropy({_PE_BLOB})",
-                description="Overall entropy of binary bytes",
+                description="Whole-file entropy of a Windows PE sample",
             ),
         ]
 
@@ -749,8 +765,11 @@ _IMPHASH_TAGS = meta.object_tags(
     category="signing",
     relative_path="vgi_pe/scalars.py",
     examples=[
-        {"description": "Import hash of a PE file", "sql": f"SELECT pe.main.imphash('{_PE_FIXTURE}')"},
-        {"description": "Import hash of PE bytes", "sql": f"SELECT pe.main.imphash({_PE_BLOB})"},
+        {
+            "description": "Check whether a PE sample's import hash matches a known cluster's imphash",
+            "sql": f"SELECT pe.main.imphash({_PE_BLOB}) = '7ff113ca9631a5215fdc9b66c067ad8f' AS in_known_cluster",
+        },
+        {"description": "Import hash of a Windows PE sample", "sql": f"SELECT pe.main.imphash({_PE_BLOB})"},
         IMPHASH_CLUSTERS,
     ],
 )
@@ -768,8 +787,8 @@ class ImphashPathFunction(ScalarFunction):
         tags = _IMPHASH_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT pe.main.imphash('{_PE_FIXTURE}')",
-                description="Import hash of a PE file",
+                sql=f"SELECT pe.main.imphash({_PE_BLOB}) = '7ff113ca9631a5215fdc9b66c067ad8f' AS in_known_cluster",
+                description="Check whether a PE sample's import hash matches a known cluster's imphash",
             ),
         ]
 
@@ -794,7 +813,7 @@ class ImphashBytesFunction(ScalarFunction):
         examples = [
             FunctionExample(
                 sql=f"SELECT pe.main.imphash({_PE_BLOB})",
-                description="Import hash of PE bytes",
+                description="Import hash of a Windows PE sample",
             ),
             FunctionExample(sql=IMPHASH_CLUSTERS["sql"], description=IMPHASH_CLUSTERS["description"]),
         ]

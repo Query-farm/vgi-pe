@@ -44,15 +44,34 @@ from vgi_rpc.rpc import OutputCollector
 
 from . import core, meta
 from .core import BinarySource
-from .examples import SECTIONS_ABOVE_FILE_ENTROPY
+from .examples import MACHO_URL, PE_URL, SECTIONS_ABOVE_FILE_ENTROPY, fixture_set
 from .schema_utils import field
 
-# Real, committed fixtures the worker can open by relative path (the worker's cwd
-# is the repo root). Chosen per function so every example actually returns rows
-# under the strict linter (it runs every example by default). hello.exe has
-# sections/imports/strings; only the Mach-O fixture has exports.
-_PE_FIXTURE = "test/sql/data/hello.exe"
-_MACHO_FIXTURE = "test/sql/data/hello_macho"
+# Examples read the committed fixtures over HTTPS from a pinned release tag
+# (``examples.FIXTURES_URL``), so they run for any user with no repo checkout.
+# hello.exe has sections/imports/strings; only the Mach-O fixture has exports.
+# A table function's binary argument must be a constant -- DuckDB rejects a
+# subquery or a lateral column there -- so the URL-backed examples are
+# two-statement ``vgi.executable_examples`` (load the bytes into the session
+# variable ``bin``, then pass ``getvariable('bin')``). The single-statement
+# ``vgi.example_queries`` / ``Meta.examples`` carriers only hold examples that are
+# self-contained in one statement (the inline-BLOB ``strings`` examples).
+
+
+def _executable(entries: list[tuple[str, str, str]]) -> str:
+    """Serialize (description, fixture URL, query) triples as ``vgi.executable_examples``."""
+    return json.dumps(
+        [{"description": d, "sql": [fixture_set(url), q]} for d, url, q in entries],
+        separators=(",", ":"),
+    )
+
+
+# A small inline BLOB with printable runs of several lengths, for the
+# self-contained single-statement ``strings`` examples.
+_STRINGS_DEMO_BLOB = (
+    "'\\x00\\x01demo payload: printable ASCII recovered straight from a BLOB\\x00\\xFF"
+    "cmd.exe /c whoami\\x00\\x02http://example.invalid/beacon\\x00ok\\x00'::BLOB"
+)
 
 
 # Human-facing Markdown column tables, embedded in each table function's
@@ -155,34 +174,76 @@ _MIN_LEN = Arg[int | None](
 # of guaranteed-runnable executable examples (VGI509).
 # ---------------------------------------------------------------------------
 
-# Catalog-qualified, self-contained, guaranteed-runnable examples (VGI509). Each
-# `sql` reads a committed fixture by relative path (the worker's cwd is the repo
-# root) so it executes cleanly against an attached `pe` worker. `expected_result`
-# is intentionally omitted — the linter only needs each query to run and return
-# rows, and pinning exact bytes/offsets would be brittle across build hosts.
+# Guaranteed-runnable examples (VGI509), each a two-statement list run in order
+# on one connection. `expected_result` is intentionally omitted -- the linter only
+# needs each query to run and return rows, and pinning exact bytes/offsets would
+# be brittle across build hosts.
 _SECTIONS_EXECUTABLE_EXAMPLES = json.dumps(
     [
-        {
-            "description": "List the sections of a PE with their per-section entropy.",
-            "sql": f"SELECT name, entropy FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5",
-        },
-        {
-            "description": "Flag high-entropy sections (a packing/encryption signal).",
-            "sql": f"SELECT name, entropy FROM pe.main.sections('{_PE_FIXTURE}') WHERE entropy > 6",
-        },
+        *json.loads(
+            _executable(
+                [
+                    (
+                        "List the sections of a PE with their per-section entropy.",
+                        PE_URL,
+                        "SELECT name, entropy FROM pe.main.sections(getvariable('bin')) ORDER BY entropy DESC LIMIT 5",
+                    ),
+                    (
+                        "Top sections by entropy with their on-disk and in-memory sizes (a packing signal).",
+                        PE_URL,
+                        "SELECT name, virtual_size, raw_size, round(entropy, 3) AS entropy "
+                        "FROM pe.main.sections(getvariable('bin')) ORDER BY entropy DESC LIMIT 5",
+                    ),
+                    (
+                        "Flag sections above 5.5 bits/byte of entropy (packed or encrypted sections run near 8).",
+                        PE_URL,
+                        "SELECT name, round(entropy, 3) AS entropy FROM pe.main.sections(getvariable('bin')) "
+                        "WHERE entropy > 5.5 ORDER BY entropy DESC",
+                    ),
+                ]
+            )
+        ),
         SECTIONS_ABOVE_FILE_ENTROPY,
-        {
-            "description": "Count the imported symbols of a PE.",
-            "sql": f"SELECT count(*) AS imports FROM pe.main.imports('{_PE_FIXTURE}')",
-        },
-        {
-            "description": "List exported symbols of a Mach-O binary.",
-            "sql": f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
-        },
-        {
-            "description": "Extract long printable strings from a binary.",
-            "sql": f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8) ORDER BY seq LIMIT 5",
-        },
+    ],
+    separators=(",", ":"),
+)
+_IMPORTS_EXECUTABLE_EXAMPLES = _executable(
+    [
+        (
+            "Imported symbols of a Windows PE sample, by DLL.",
+            PE_URL,
+            "SELECT library, function FROM pe.main.imports(getvariable('bin')) ORDER BY library, function LIMIT 10",
+        ),
+        (
+            "How many symbols a PE sample imports from each DLL.",
+            PE_URL,
+            "SELECT library, count(*) AS n_functions FROM pe.main.imports(getvariable('bin')) "
+            "GROUP BY library ORDER BY n_functions DESC",
+        ),
+    ]
+)
+_EXPORTS_EXECUTABLE_EXAMPLES = _executable(
+    [
+        (
+            "Exported symbols of a macOS Mach-O sample.",
+            MACHO_URL,
+            "SELECT name, address FROM pe.main.exports(getvariable('bin')) ORDER BY name",
+        ),
+    ]
+)
+_STRINGS_EXECUTABLE_EXAMPLES = _executable(
+    [
+        (
+            "Extract long printable strings from a Windows PE sample.",
+            PE_URL,
+            "SELECT seq, value FROM pe.main.strings(getvariable('bin'), min_len := 8) ORDER BY seq LIMIT 5",
+        ),
+        (
+            "Hunt a PE sample's strings for DLL names.",
+            PE_URL,
+            "SELECT DISTINCT value FROM pe.main.strings(getvariable('bin')) "
+            "WHERE lower(value) LIKE '%.dll' ORDER BY value",
+        ),
     ]
 )
 
@@ -213,16 +274,6 @@ _SECTIONS_TAGS = {
         keywords="sections, segments, layout, entropy, packing, .text, .data, characteristics, flags, structure",
         category="structure",
         relative_path="vgi_pe/tables.py",
-        examples=[
-            {
-                "description": "Top sections by entropy (a packing signal)",
-                "sql": (
-                    f"SELECT name, virtual_size, raw_size, entropy "
-                    f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
-                ),
-            },
-            SECTIONS_ABOVE_FILE_ENTROPY,
-        ],
     ),
     "vgi.result_columns_schema": _SECTIONS_COLUMNS_SCHEMA,
     "vgi.executable_examples": _SECTIONS_EXECUTABLE_EXAMPLES,
@@ -255,17 +306,9 @@ _IMPORTS_TAGS = {
         keywords="imports, imported symbols, IAT, DLL, API, dependencies, dynamic symbols, capabilities, behavior",
         category="symbols",
         relative_path="vgi_pe/tables.py",
-        examples=[
-            {
-                "description": "Imported symbols of a binary file",
-                "sql": (
-                    f"SELECT library, function FROM pe.main.imports('{_PE_FIXTURE}') "
-                    f"ORDER BY library, function LIMIT 10"
-                ),
-            },
-        ],
     ),
     "vgi.result_columns_schema": _IMPORTS_COLUMNS_SCHEMA,
+    "vgi.executable_examples": _IMPORTS_EXECUTABLE_EXAMPLES,
 }
 
 _EXPORTS_TAGS = {
@@ -293,14 +336,9 @@ _EXPORTS_TAGS = {
         keywords="exports, exported symbols, EAT, DLL, shared library, dylib, so, public API, side-loading",
         category="symbols",
         relative_path="vgi_pe/tables.py",
-        examples=[
-            {
-                "description": "Exported symbols of a shared binary",
-                "sql": f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
-            },
-        ],
     ),
     "vgi.result_columns_schema": _EXPORTS_COLUMNS_SCHEMA,
+    "vgi.executable_examples": _EXPORTS_EXECUTABLE_EXAMPLES,
 }
 
 _STRINGS_TAGS = {
@@ -334,24 +372,17 @@ _STRINGS_TAGS = {
         relative_path="vgi_pe/tables.py",
         examples=[
             {
-                "description": "Printable strings of a binary file",
-                "sql": f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}') ORDER BY seq LIMIT 10",
-            },
-            {
-                "description": "How many strings are at least 8 chars long",
-                "sql": f"SELECT count(*) AS long_strings FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8)",
-            },
-            {
                 "description": "Extract printable strings from raw BLOB bytes (no file needed)",
-                "sql": (
-                    "SELECT seq, value FROM pe.main.strings("
-                    "'demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) "
-                    "ORDER BY seq"
-                ),
+                "sql": f"SELECT seq, value FROM pe.main.strings({_STRINGS_DEMO_BLOB}, min_len := 5) ORDER BY seq",
+            },
+            {
+                "description": "Count the strings of at least 12 characters in a BLOB",
+                "sql": f"SELECT count(*) AS long_strings FROM pe.main.strings({_STRINGS_DEMO_BLOB}, min_len := 12)",
             },
         ],
     ),
     "vgi.result_columns_schema": _STRINGS_COLUMNS_SCHEMA,
+    "vgi.executable_examples": _STRINGS_EXECUTABLE_EXAMPLES,
 }
 
 
@@ -416,19 +447,9 @@ class SectionsPathFunction(TableFunctionGenerator[_SectionsPathArgs]):
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (VARCHAR path)"
         categories = ["pe", "structure"]
         tags = _SECTIONS_TAGS
-        examples = [
-            FunctionExample(
-                sql=(
-                    f"SELECT name, virtual_size, raw_size, entropy "
-                    f"FROM pe.main.sections('{_PE_FIXTURE}') ORDER BY entropy DESC LIMIT 5"
-                ),
-                description="Top sections by entropy (a packing signal)",
-            ),
-            FunctionExample(
-                sql=SECTIONS_ABOVE_FILE_ENTROPY["sql"],
-                description=SECTIONS_ABOVE_FILE_ENTROPY["description"],
-            ),
-        ]
+        # No single-statement examples: the binary argument must be a constant, so
+        # the runnable examples are the URL-backed `vgi.executable_examples` on the
+        # shared tags.
 
     @classmethod
     def cardinality(cls, params: BindParams[_SectionsPathArgs]) -> TableCardinality:
@@ -459,12 +480,11 @@ class SectionsBytesFunction(TableFunctionGenerator[_SectionsBytesArgs]):
         description = "Per-section (name, virtual_size, raw_size, entropy, flags) of a binary (BLOB bytes)"
         categories = ["pe", "structure"]
         tags = _SECTIONS_TAGS
-        # No `examples` on the BLOB overload: a VGI table function only accepts
-        # *literal* parameters (not a subquery or a lateral column reference), so
-        # a runnable BLOB-input example would have to inline the whole binary as a
-        # hex literal. The VARCHAR-path overload (same `pe.main.sections` object)
-        # already carries runnable, row-returning examples, and the BLOB path is
-        # exercised end-to-end by the test suite.
+        # No single-statement `examples`: a VGI table function only accepts
+        # constant parameters (not a subquery or a lateral column reference), so
+        # the runnable examples are the two-statement `vgi.executable_examples` on
+        # the shared tags: they load a sample's bytes over HTTPS into a session
+        # variable and pass `getvariable('bin')` to this BLOB overload.
 
     @classmethod
     def cardinality(cls, params: BindParams[_SectionsBytesArgs]) -> TableCardinality:
@@ -531,15 +551,9 @@ class ImportsPathFunction(TableFunctionGenerator[_ImportsPathArgs]):
         description = "Imported symbols (library, function) of a binary (VARCHAR path)"
         categories = ["pe", "imports"]
         tags = _IMPORTS_TAGS
-        examples = [
-            FunctionExample(
-                sql=(
-                    f"SELECT library, function FROM pe.main.imports('{_PE_FIXTURE}') "
-                    f"ORDER BY library, function LIMIT 10"
-                ),
-                description="Imported symbols of a binary file",
-            ),
-        ]
+        # No single-statement examples: the binary argument must be a constant, so
+        # the runnable examples are the URL-backed `vgi.executable_examples` on the
+        # shared tags.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ImportsPathArgs]) -> TableCardinality:
@@ -570,9 +584,8 @@ class ImportsBytesFunction(TableFunctionGenerator[_ImportsBytesArgs]):
         description = "Imported symbols (library, function) of a binary (BLOB bytes)"
         categories = ["pe", "imports"]
         tags = _IMPORTS_TAGS
-        # See SectionsBytesFunction: the VARCHAR-path overload of this same
-        # `pe.main.imports` object carries the runnable examples; a table function
-        # only accepts literal args so a BLOB example can't reference a file.
+        # See SectionsBytesFunction: the runnable examples are the shared tags'
+        # two-statement `vgi.executable_examples`.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ImportsBytesArgs]) -> TableCardinality:
@@ -639,12 +652,9 @@ class ExportsPathFunction(TableFunctionGenerator[_ExportsPathArgs]):
         description = "Exported symbols (name, address) of a binary (VARCHAR path)"
         categories = ["pe", "exports"]
         tags = _EXPORTS_TAGS
-        examples = [
-            FunctionExample(
-                sql=f"SELECT name, address FROM pe.main.exports('{_MACHO_FIXTURE}') ORDER BY name",
-                description="Exported symbols of a shared binary",
-            ),
-        ]
+        # No single-statement examples: the binary argument must be a constant, so
+        # the runnable examples are the URL-backed `vgi.executable_examples` on the
+        # shared tags.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ExportsPathArgs]) -> TableCardinality:
@@ -675,9 +685,8 @@ class ExportsBytesFunction(TableFunctionGenerator[_ExportsBytesArgs]):
         description = "Exported symbols (name, address) of a binary (BLOB bytes)"
         categories = ["pe", "exports"]
         tags = _EXPORTS_TAGS
-        # See SectionsBytesFunction: the VARCHAR-path overload of this same
-        # `pe.main.exports` object carries the runnable examples; a table function
-        # only accepts literal args so a BLOB example can't reference a file.
+        # See SectionsBytesFunction: the runnable examples are the shared tags'
+        # two-statement `vgi.executable_examples`.
 
     @classmethod
     def cardinality(cls, params: BindParams[_ExportsBytesArgs]) -> TableCardinality:
@@ -748,12 +757,8 @@ class StringsPathFunction(TableFunctionGenerator[_StringsPathArgs]):
         tags = _STRINGS_TAGS
         examples = [
             FunctionExample(
-                sql=f"SELECT seq, value FROM pe.main.strings('{_PE_FIXTURE}') ORDER BY seq LIMIT 10",
-                description="Printable strings of a binary file",
-            ),
-            FunctionExample(
-                sql=(f"SELECT count(*) AS long_strings FROM pe.main.strings('{_PE_FIXTURE}', min_len := 8)"),
-                description="How many strings are at least 8 chars long",
+                sql=f"SELECT count(*) AS long_strings FROM pe.main.strings({_STRINGS_DEMO_BLOB}, min_len := 12)",
+                description="Count the strings of at least 12 characters in a BLOB",
             ),
         ]
 
@@ -792,11 +797,7 @@ class StringsBytesFunction(TableFunctionGenerator[_StringsBytesArgs]):
         # sitting in a column) and it extracts the printable runs.
         examples = [
             FunctionExample(
-                sql=(
-                    "SELECT seq, value FROM pe.main.strings("
-                    "'demo payload: printable ASCII recovered straight from a BLOB'::BLOB, min_len := 5) "
-                    "ORDER BY seq"
-                ),
+                sql=f"SELECT seq, value FROM pe.main.strings({_STRINGS_DEMO_BLOB}, min_len := 5) ORDER BY seq",
                 description="Extract printable strings from raw BLOB bytes (no file needed)",
             ),
         ]

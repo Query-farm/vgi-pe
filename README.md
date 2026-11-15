@@ -20,7 +20,7 @@ parser for PE / ELF / Mach-O.
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
-ATTACH 'pe' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.0 vgi-pe-worker');
+ATTACH 'pe' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.1 vgi-pe-worker');
 
 SELECT pe.binary_format('sample.exe');            -- 'PE' | 'ELF' | 'MachO' | NULL
 SELECT pe.machine('sample.exe');                  -- 'X86_64', 'ARM64', ...
@@ -47,23 +47,26 @@ The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.0 vgi-pe-worker');
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.1 vgi-pe-worker');
 
 -- Browse the worker's analysis catalog before owning a binary.
 SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name;
 
--- Detect the executable container format of a sample.
-SELECT pe.main.binary_format('hello.exe');
+-- Detect the executable container format of a sample (any file read_blob can
+-- reach: a local path, a glob, or an https:// URL like this committed fixture).
+SELECT pe.main.binary_format(content)
+FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-pe/v0.4.0/test/sql/data/hello.exe');
+-- 'PE'
 ```
 
-Change `@v0.4.0` to move to a newer release.
+Change `@v0.4.1` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker and its dependencies):
 
   ```sql
-  ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-pe:0.4.0');
+  ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-pe:0.4.1');
   ```
 
 - **From a local checkout** (`git clone https://github.com/Query-farm/vgi-pe`), point `LOCATION` at `uv run --project /path/to/vgi-pe vgi-pe-worker`.

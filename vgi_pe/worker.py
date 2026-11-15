@@ -43,7 +43,16 @@ import json
 from vgi import Worker
 from vgi.catalog import Catalog, ConstraintInfo, Schema, Table, constraint_record
 
-from vgi_pe.examples import CORPUS_TRIAGE, IMPHASH_CLUSTERS, SECTIONS_ABOVE_FILE_ENTROPY
+from vgi_pe.examples import (
+    CORPUS_TRIAGE,
+    IMPHASH_CLUSTERS,
+    MACHO_BLOB,
+    PE_BLOB,
+    PE_URL,
+    SECTIONS_ABOVE_FILE_ENTROPY,
+    as_script,
+    fixture_set,
+)
 from vgi_pe.meta import keywords_array
 from vgi_pe.scalars import SCALAR_FUNCTIONS
 from vgi_pe.tables import TABLE_FUNCTIONS, AnalysesFunction
@@ -120,8 +129,9 @@ _SCHEMA_DESCRIPTION_MD = (
 # Representative, catalog-qualified example queries for the schema (VGI506/VGI515).
 # A described-example JSON list (each carries a human-readable description; the
 # native duckdb_functions().examples carrier drops descriptions, so the strict
-# linter reads them from this tag). They read committed fixtures by relative path
-# so they run against an attached worker.
+# linter reads them from this tag). They read the committed fixtures over HTTPS
+# from a pinned release tag (vgi_pe/examples.py) so they run for any user; the
+# table-function entries are two-statement scripts (load the bytes, then query).
 _SCHEMA_EXAMPLE_QUERIES = json.dumps(
     [
         {
@@ -130,35 +140,43 @@ _SCHEMA_EXAMPLE_QUERIES = json.dumps(
         },
         {
             "description": "Detect the executable container format of a sample.",
-            "sql": "SELECT pe.main.binary_format('test/sql/data/hello.exe')",
+            "sql": f"SELECT pe.main.binary_format({PE_BLOB})",
         },
         {
             "description": "Read the target CPU architecture of a sample.",
-            "sql": "SELECT pe.main.machine('test/sql/data/hello.exe')",
+            "sql": f"SELECT pe.main.machine({MACHO_BLOB})",
         },
         {
             "description": "Compute whole-file entropy as a packing/encryption signal.",
-            "sql": "SELECT pe.main.overall_entropy('test/sql/data/hello.exe')",
+            "sql": f"SELECT round(pe.main.overall_entropy({PE_BLOB}), 3) AS file_entropy",
         },
         {
             "description": "Fingerprint a PE by its import hash for clustering.",
-            "sql": "SELECT pe.main.imphash('test/sql/data/hello.exe')",
+            "sql": f"SELECT pe.main.imphash({PE_BLOB})",
         },
         {
             "description": "Rank a sample's sections by per-section entropy.",
-            "sql": "SELECT name, entropy FROM pe.main.sections('test/sql/data/hello.exe') ORDER BY entropy DESC",
+            "sql": (
+                f"{fixture_set(PE_URL)};\n"
+                "SELECT name, entropy FROM pe.main.sections(getvariable('bin')) ORDER BY entropy DESC"
+            ),
         },
         {
             "description": "List the first imported symbols of a sample.",
-            "sql": "SELECT library, function FROM pe.main.imports('test/sql/data/hello.exe') LIMIT 10",
+            "sql": (
+                f"{fixture_set(PE_URL)};\nSELECT library, function FROM pe.main.imports(getvariable('bin')) LIMIT 10"
+            ),
         },
         {
             "description": "Extract long printable strings for IOC hunting.",
-            "sql": "SELECT seq, value FROM pe.main.strings('test/sql/data/hello.exe', min_len := 8) LIMIT 10",
+            "sql": (
+                f"{fixture_set(PE_URL)};\n"
+                "SELECT seq, value FROM pe.main.strings(getvariable('bin'), min_len := 8) LIMIT 10"
+            ),
         },
         # Composed: several of the worker's functions in one query (vgi_pe/examples.py).
         CORPUS_TRIAGE,
-        SECTIONS_ABOVE_FILE_ENTROPY,
+        as_script(SECTIONS_ABOVE_FILE_ENTROPY),
         IMPHASH_CLUSTERS,
     ]
 )
