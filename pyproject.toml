@@ -109,6 +109,7 @@ packages = ["vgi_pe"]
 [tool.ruff]
 line-length = 120
 target-version = "py313"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "D"]
