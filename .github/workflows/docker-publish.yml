@@ -97,8 +97,9 @@ jobs:
         T_HB=$(date +%s)
 
         echo "::group::stdio entrypoint smoke (one cold container, one file)"
-        TEST_PATTERN="test/sql/format.test" \
-          VGI_PE_WORKER="docker run -i --rm $CITEST_IMAGE stdio" \
+        TRANSPORT=stdio \
+          TEST_PATTERN="test/sql/format.test" \
+          WORKER="docker run -i --rm $CITEST_IMAGE stdio" \
           ci/run-integration.sh
         echo "::endgroup::"
         T_STDIO=$(date +%s)
@@ -108,7 +109,7 @@ jobs:
         trap 'docker rm -f "$CID" >/dev/null 2>&1' EXIT
         for _ in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:8000/health && break; sleep 1; done
         T_READY=$(date +%s)
-        TRANSPORT=http VGI_PE_WORKER="http://localhost:8000" ci/run-integration.sh
+        TRANSPORT=http WORKER_URL="http://localhost:8000" ci/run-integration.sh
         echo "::endgroup::"
         T_HTTP=$(date +%s)
 
