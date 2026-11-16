@@ -69,8 +69,8 @@ jobs:
       #   - HTTP: run the FULL suite against a SINGLE warm container (end-to-end
       #     image check, no per-ATTACH startup). The container bakes the fixtures
       #     in at /app/test/sql/data so the relative paths resolve worker-side.
-      # $CITEST_IMAGE is the loaded <image>:citest-amd64 ref; GH_TOKEN is provided
-      # for the haybarn download.
+      # $CITEST_IMAGE is the loaded <image>:citest-amd64 ref; the runner is the
+      # pinned haybarn-unittest from ci.yml's HAYBARN_VERSION.
       image_test: |
         _t0=$(date +%s)
         echo "::group::image + runner facts"
@@ -78,21 +78,14 @@ jobs:
         echo "runner: $(nproc) cpus"; free -h 2>/dev/null || true
         echo "::endgroup::"
 
-        echo "::group::download haybarn-unittest"
-        # haybarn 2.0 is RC-only, so `gh release view` (no tag) still returns the
-        # 1.5 line: pick the newest haybarn-v2.0.* tag (its community `vgi`
-        # extension is the one that speaks the worker's VGI protocol vgi.v3 / 3.1).
-        REL=$(gh release list --repo Query-farm-haybarn/haybarn --limit 30 --json tagName \
-          --jq '[.[].tagName | select(startswith("haybarn-v2.0"))][0]')
-        if [ -z "$REL" ] || [ "$REL" = "null" ]; then
-          echo "::error::no haybarn-v2.0.* release found" >&2
-          exit 1
-        fi
-        gh release download "$REL" --repo Query-farm-haybarn/haybarn \
-          --pattern 'haybarn_unittest-linux-amd64.zip' --output hb.zip --clobber
-        mkdir -p hb && unzip -o -q hb.zip -d hb
-        export HAYBARN_UNITTEST="$PWD/$(find hb -name 'haybarn-unittest' -type f | head -1)"
-        chmod +x "$HAYBARN_UNITTEST"
+        echo "::group::install haybarn-unittest (pinned)"
+        # The same runner version ci.yml's integration job pins (HAYBARN_VERSION
+        # there is the single source; a reusable workflow can't see caller env).
+        HAYBARN_VERSION=$(sed -n 's/^  HAYBARN_VERSION: "\(.*\)"$/\1/p' .github/workflows/ci.yml)
+        [ -n "$HAYBARN_VERSION" ] || { echo "::error::HAYBARN_VERSION not found in ci.yml"; exit 1; }
+        command -v uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH="$HOME/.local/bin:$PATH"; }
+        uv venv -q .tools && uv pip install -q -p .tools "haybarn-unittest==${HAYBARN_VERSION}"
+        export HAYBARN_UNITTEST="$PWD/.tools/bin/haybarn-unittest"
         echo "::endgroup::"
         T_HB=$(date +%s)
 
@@ -119,7 +112,7 @@ jobs:
           echo ""
           echo "| phase | seconds |"
           echo "| --- | ---: |"
-          echo "| download haybarn | $((T_HB - _t0)) |"
+          echo "| install haybarn-unittest | $((T_HB - _t0)) |"
           echo "| stdio entrypoint smoke (1 cold container) | $((T_STDIO - T_HB)) |"
           echo "| http container ready | $((T_READY - T_STDIO)) |"
           echo "| full suite over HTTP (1 warm container) | $((T_HTTP - T_READY)) |"
