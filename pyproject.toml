@@ -30,7 +30,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     # Requires vgi-python >=0.51.0: the signed haybarn 2.0 `vgi` community
     # extension speaks VGI protocol vgi.v3 (3.3) and rejects workers on older
@@ -108,7 +108,7 @@ packages = ["vgi_pe"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py313"
+target-version = "py314"
 extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
@@ -133,7 +133,7 @@ skip_checking_raises = true
 allow_init_docstring = true
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 warn_return_any = true
 warn_unused_ignores = true

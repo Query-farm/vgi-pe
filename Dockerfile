@@ -6,7 +6,7 @@
 # See docker-entrypoint.sh. Static, read-only malware triage of PE/ELF/Mach-O
 # binaries (lief); nothing is ever executed. Stateless — no volume.
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 ARG VERSION=0.0.0
 ARG GIT_COMMIT=unknown
