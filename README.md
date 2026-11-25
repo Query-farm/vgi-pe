@@ -20,7 +20,7 @@ parser for PE / ELF / Mach-O.
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
-ATTACH 'pe' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.2 vgi-pe-worker');
+ATTACH 'pe' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.5.0 vgi-pe-worker');
 
 SELECT pe.binary_format('sample.exe');            -- 'PE' | 'ELF' | 'MachO' | NULL
 SELECT pe.machine('sample.exe');                  -- 'X86_64', 'ARM64', ...
@@ -39,6 +39,8 @@ SELECT filename, pe.binary_format(content) AS container, pe.machine(content) AS 
 FROM read_blob('samples/*') ORDER BY filename;
 ```
 
+vgi-pe 0.5.0 speaks VGI protocol 3.4, so it needs Haybarn 2.0.1 or newer (Haybarn 2.0.0 loads a 3.3 `vgi` extension that cannot attach it).
+
 ## Quick start
 
 The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from a tagged release on GitHub. `uvx` builds an isolated environment on the first ATTACH and reuses it afterwards:
@@ -47,7 +49,7 @@ The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.4.2 vgi-pe-worker');
+ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-pe@v0.5.0 vgi-pe-worker');
 
 -- Browse the worker's analysis catalog before owning a binary.
 SELECT name, kind, formats FROM pe.main.analyses ORDER BY kind, name;
@@ -59,14 +61,14 @@ FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-pe/v0.4.0/test/
 -- 'PE'
 ```
 
-Change `@v0.4.2` to move to a newer release.
+Change `@v0.5.0` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker and its dependencies):
 
   ```sql
-  ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-pe:0.4.2');
+  ATTACH 'pe' AS pe (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-pe:0.5.0');
   ```
 
 - **From a local checkout** (`git clone https://github.com/Query-farm/vgi-pe`), point `LOCATION` at `uv run --project /path/to/vgi-pe vgi-pe-worker`.
